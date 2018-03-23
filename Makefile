@@ -2,7 +2,7 @@ SRC = ./
 Inc = ./
 CXX = g++
 FLAGS = --std=c++11
-Target = ../lib/libarseenet.a
+Target = ../lib/libeasynet.a
 OBJS = udpsock.o acceptor.o connector.o epoll.o netevent_listener_helper.o \
 	netpeer.o
 
