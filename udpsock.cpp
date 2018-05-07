@@ -13,8 +13,8 @@ typedef int socklen_t;
 #include <arpa/inet.h>
 #include <string.h>
 
-#define fd_t_ERROR -1
-#define INVALID_fd_t -1
+#define SOCKET_ERROR -1
+#define INVALID_SOCKET -1
 #endif
 
 NAMESP_BEGIN
@@ -24,7 +24,7 @@ namespace net
 UdpPeer* UdpSock::Create(const std::string &ip, unsigned short port) throw(sockexcpt)
 {
 	fd_t sock;
-	if ((sock=socket(AF_INET, SOCK_DGRAM,0))== INVALID_fd_t)
+	if ((sock=socket(AF_INET, SOCK_DGRAM,0))== INVALID_SOCKET)
 	{ 
 		throw sockexcpt("bind");
 	} 
@@ -33,7 +33,7 @@ UdpPeer* UdpSock::Create(const std::string &ip, unsigned short port) throw(socke
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr( ip.c_str() );
-	if (bind(sock, (sockaddr *)&addr, sizeof(addr)) == fd_t_ERROR)
+	if (bind(sock, (sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
 		throw sockexcpt("bind");
 	}
@@ -43,7 +43,7 @@ UdpPeer* UdpSock::Create(const std::string &ip, unsigned short port) throw(socke
 UdpPeer* UdpSock::Create(unsigned short port) throw(sockexcpt)
 {
 	fd_t sock;
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_fd_t)
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
 	{
 		throw sockexcpt("socket");
 	}
