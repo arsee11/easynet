@@ -1,6 +1,5 @@
 //file: udpsock.h
 //copyright	: Copyright (c) 2014 arsee.
-//license	: GNU GPL v2.
 //author	: arsee
 
 //****************************
