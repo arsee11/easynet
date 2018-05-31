@@ -11,7 +11,7 @@ NAMESP_BEGIN
 namespace net
 {
 
-#ifdef _MVC_VER
+#ifdef _MSC_VER
 typedef SOCKET fd_t;
 #endif
 
