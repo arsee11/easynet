@@ -1,6 +1,5 @@
 //file: udpsock.h
 //copyright	: Copyright (c) 2014 arsee.
-//license	: GNU GPL v2.
 //author	: arsee
 
 //****************************
@@ -13,7 +12,7 @@
 #define UDPSOCK_H
 
 #ifndef NAMESPDEF_H
-#include "../namespdef.h"
+#include "namespdef.h"
 #endif
 
 #ifndef ADDR_H

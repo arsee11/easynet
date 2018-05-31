@@ -16,7 +16,7 @@
 #include "netevents.h"
 
 #ifndef NAMESPDEF_H
-#include "../namespdef.h"
+#include "namespdef.h"
 #endif
 
 

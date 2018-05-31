@@ -4,9 +4,6 @@
 #include "netevent_listener_helper.h"
 #include "netevent_listener.h"
 
-#ifndef NAMESPDEF_H
-#include "../namespdef.h"
-#endif
 
 NAMESP_BEGIN
 namespace net
