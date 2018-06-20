@@ -40,7 +40,7 @@ void Epoll::attach(fd_t fd)
 Epoll::event_set_t Epoll::select()
 {
 #ifdef EBUG
-	cout<<"EpollBase::selecting..."<<endl;
+	cout<<"Epoll::select()"<<endl;
 #endif
 
 	epoll_event ehs[_max];
@@ -60,18 +60,18 @@ Epoll::event_set_t Epoll::select()
 			if(ehs[i].data.fd == _listenfd)
 				event = new NetAcceptEvent(nullptr);
 			else
-				event = new NetInputEvent(new EventSender(ehs[i].data.fd) );	
+				event = new NetInputEvent(&(ehs[i].data.fd) );	
 
 			events.push_back(event);
 		}
 		else if(ehs[i].events&EPOLLOUT )
 		{
-			Event* event = new NetOutputEvent(new EventSender(ehs[i].data.fd) );
+			Event* event = new NetOutputEvent(&(ehs[i].data.fd) );
 			events.push_back(event);
 		}
 		else if(ehs[i].events&EPOLLRDHUP )
 		{
-			Event* event = new NetCloseEvent(new EventSender(ehs[i].data.fd) );
+			Event* event = new NetCloseEvent(&(ehs[i].data.fd) );
 			events.push_back(event);
 		}
 		else

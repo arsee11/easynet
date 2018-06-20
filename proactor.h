@@ -7,23 +7,25 @@
 #include "netevents.h"
 #include "netpeer.h"
 #include "event_queue.h"
-#include "acceptor.h"
 
 #ifndef NAMESPDEF_H
 #include "namespdef.h"
 #endif
+
+#include "acceptor.h"
+#include "acceptor_udp.h"
 
 NAMESP_BEGIN
 namespace net
 {
 
 //////////////////////////////////////////////////////////////////////////////
-template<class Selector>
+template<class Selector, class Acceptor>
 class Proactor
 {
-	typedef Proactor<Selector> my_t;
+	typedef Proactor<Selector, Acceptor> my_t;
 
-	static constexpr int MAX_BUF_LEN = 65535;
+	static constexpr int MAX_BUF_LEN = 1400*8;
 	
 public:
 	void run()
@@ -50,43 +52,47 @@ public:
 	}
 	
 private:
+	//return true if want to break the event process.
 	bool filterNetInput(Event* e){
 		onInput(e);	
 		return true;
 	}
 
+	//return true if want to break the event process.
 	bool filterNetAccept(Event* e){
 		onAccept(e);	
 		return true;
 	}
 	
 	void onInput(Event* e){
-		netpeer_ptr_t peer = _netpeer_holder[e->sender()->fd()];
-		delete e->sender();
-		char* buf = (char*)malloc(MAX_BUF_LEN);
-		int rlen = peer->read(buf, MAX_BUF_LEN);
+		netpeer_ptr_t peer = _acceptor->getPeer( 
+			*static_cast<typename Acceptor::netpeer_key_t*>(e->sender()) 
+		);
+
+		int rlen = peer->read(_recvbuf, MAX_BUF_LEN);
 		if( rlen > 0 )
 		{
 			Event* ne = new NetInputEvent(peer.get()); 
-			ne->extra(buf, rlen);
+			ne->extra(_recvbuf, rlen);
 			_event_queue->process(ne);	
 		}
 		else
 		{
-			free(buf);
 			_selector.detach(peer->fd());
 			peer->close();
 			Event* ne = new NetCloseEvent(peer.get()); 
 			_event_queue->process(ne);	
-			_netpeer_holder.erase(peer->fd());
 		}
 	}
 
 	void onAccept(Event* e){
-		NetPeer* peer = _acceptor->accept();
-		_netpeer_holder.insert( std::make_pair(peer->fd(), netpeer_ptr_t(peer)) );
-		_selector.attach(peer->fd());
-		Event* ne = new NetAcceptEvent(peer);
+		Event* ne=nullptr;
+		NetPeer* peer=nullptr;
+		std::tie(ne, peer)= _acceptor->accept();
+		if(peer != nullptr) 
+		{
+			_selector.attach(peer->fd());
+		}
 		if(ne != nullptr)
 		{
 			_event_queue->process(ne);	
@@ -97,11 +103,18 @@ private:
 	}
 	
 protected:
+	char _recvbuf[MAX_BUF_LEN];
 	Selector _selector;
 	EventQueue* _event_queue;	
 	Acceptor* _acceptor = nullptr;
-	netpeer_manager_t _netpeer_holder;
 };
+
+
+template<class Selector>
+using ProactorUdp = Proactor<Selector, AcceptorUdp>;
+
+template<class Selector>
+using ProactorTcp = Proactor<Selector, Acceptor>;
 
 }//net
 NAMESP_END

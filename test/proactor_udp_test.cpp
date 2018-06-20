@@ -13,7 +13,7 @@
 using namespace std;
 using namespace arsee::net;
 
-typedef ProactorTcp<Epoll> proactor_t;
+typedef ProactorUdp<Epoll> proactor_t;
 
 class MyNetEventListener: public NetworkEventListener
 {
@@ -27,6 +27,7 @@ public:
 	{
 		cout<<conn<<",recv{"<<conn->remote_addr().ip<<","<<conn->remote_addr().port<<"}";
 		cout<<"("<<len<<"):"<<(const char*)buf<<endl;	
+		conn->write((char*)buf, len);
 	}	
 
 	void onOutput(NetPeer* conn)
@@ -37,20 +38,19 @@ public:
 
 	void onClose(NetPeer* conn)
 	{
-		cout<<"peer{"<<conn->remote_addr().ip<<","<<conn->remote_addr().port<<"} closed"<<endl;	
 	}
 
 };
 
 int main( )
 {
-	Acceptor a(1261, false);
+	AcceptorUdp a(1261, false);
 	a.open();
 
 	MyNetEventListener l;
 	l.listen<NetInputEvent>();
-	l.listen<NetAcceptEvent>();
-	l.listen<NetCloseEvent>();
+	//l.listen<NetAcceptEvent>();
+	//l.listen<NetCloseEvent>();
 	EventQueue eq;
 	eq.addListener(&l);
 

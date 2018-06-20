@@ -24,8 +24,13 @@ NAMESP_BEGIN
 namespace net
 {
 
+class Event;
+
 class Acceptor 
-{
+{ 
+public:
+	typedef fd_t netpeer_key_t;
+
 public:
 	Acceptor(const AddrPair& local_addr, bool isopen=true)throw(sockexcpt)
 		:_local_addr(local_addr)
@@ -51,14 +56,17 @@ public:
 			::close(_fd);
 	}
 
-	NetPeer* accept();
+	std::tuple<Event*, NetPeer*> accept();
 
 	fd_t fd(){ return _fd; }
+
+	netpeer_ptr_t getPeer(netpeer_key_t key){ return _netpeers[key]; }
 
 private:
 	fd_t _fd;
 	AddrPair _local_addr;
 	bool _isopened=false;
+	netpeer_manager_t _netpeers;
 };
 
 }//net

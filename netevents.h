@@ -16,7 +16,7 @@ namespace net
 class NetInputEvent : public Event
 {
 public:
-	NetInputEvent(EventSender* s)
+	NetInputEvent(void* s)
 		:Event(s)
 	{
 	}
@@ -25,7 +25,7 @@ public:
 class NetOutputEvent : public Event
 {
 public:
-	NetOutputEvent(EventSender* s)
+	NetOutputEvent(void* s)
 		:Event(s)
 	{
 	}
@@ -34,7 +34,7 @@ public:
 class NetCloseEvent: public Event
 {
 public:
-	NetCloseEvent(EventSender* s)
+	NetCloseEvent(void* s)
 		:Event(s)
 	{
 	}
@@ -43,7 +43,7 @@ public:
 class NetAcceptEvent : public Event
 {
 public:
-	NetAcceptEvent(EventSender* s)
+	NetAcceptEvent(void* s)
 		:Event(s)
 	{
 	}

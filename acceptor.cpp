@@ -2,6 +2,7 @@
 
 #include "acceptor.h"
 #include <string.h>
+#include "netevents.h"
 
 NAMESP_BEGIN
 namespace net
@@ -33,7 +34,7 @@ void Acceptor::open()throw(sockexcpt)
 }
 
 
-NetPeer* Acceptor::accept()
+std::tuple<Event*, NetPeer*> Acceptor::accept()
 {
 	sockaddr_in addr;
 	socklen_t alen = sizeof(addr);
@@ -41,12 +42,13 @@ NetPeer* Acceptor::accept()
 	if(nfd < 0 )
 	{
 		perror("accept");
-		return nullptr;
+		return std::make_tuple(nullptr, nullptr);
 	}
 
-	return  new NetPeerImpl(nfd, AddrPair{getport(&addr), getip(&addr)} );
+	netpeer_ptr_t peer( new NetPeerImpl(nfd, AddrPair{getport(&addr), getip(&addr)} ) );
+	_netpeers.insert(std::make_pair(nfd, peer));
+	return  std::make_tuple(new NetAcceptEvent(peer.get()), peer.get());
 }
-
 
 }//net
 NAMESP_END

@@ -42,6 +42,7 @@ public:
 		{
 			Event *e = *i;
 			i = _events.erase(i);
+			//if filter return true, break the event process
 			if(filter(e))
 			{
 				delete e;
@@ -61,6 +62,7 @@ public:
 	}
 
 private:
+	//return true if want to break the event process.
 	bool filter(Event* e){
 		auto i = _event_filter_map.find( std::type_index( typeid(*e)) );
 		if( i != _event_filter_map.end() )

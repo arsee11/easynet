@@ -41,5 +41,12 @@ int NetPeerImpl::read(char* buf, int len)
 	return recv(_fd, buf, len, 0);
 }
 
+
+int NetPeerUdp::write(const char *buf, int len)
+{
+
+	return sendto(_fd, buf, len, 0, (sockaddr*)&_sockaddr, sizeof(_sockaddr));
+}
+
 }//net
 NAMESP_END
