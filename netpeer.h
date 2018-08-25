@@ -4,88 +4,65 @@
 #ifndef NET_PEER_H
 #define NET_PEER_H
 
-#include "fddef.h"
 #include "addr.h"
-#include <memory>
-#include <string.h>
-#include <unordered_map>
-#include <sys/socket.h>
+#include "fddef.h"
+#include "pollevents.h"
 
-#ifndef NAMESPDEF_H
-#include "namespdef.h"
-#endif
+#include <sys/socket.h>
+#include <memory>
 
 NAMESP_BEGIN
 namespace net
 {
 
-class NetPeer 
-{
-public:
-	NetPeer()=delete;
+template<class EventQueueT>
+using PollListner = typename PollInputEvent<EventQueueT>::listener_t;
 
-	NetPeer(fd_t fd, const AddrPair& remote_addr)
-		:_fd(fd)
+template<class EventQueueT, class MsgWrapper>
+class NetPeerBasic : public PollListner<EventQueueT>
+	,public std::enable_shared_from_this<NetPeerBasic<EventQueueT, MsgWrapper>> 
+{
+	using NetPeer = NetPeerBasic<EventQueueT, MsgWrapper>;
+	using netpeer_ptr = std::shared_ptr<NetPeer>;
+	using Event = PollInputEvent<EventQueueT>;
+	using CompletedEvent = InputCompletedEvent<EventQueueT, netpeer_ptr, MsgWrapper>;
+	using CloseEvent = CloseCompletedEvent<EventQueueT, netpeer_ptr>;
+
+public:
+	NetPeerBasic()=delete;
+
+	NetPeerBasic(EventQueueT* q, fd_t fd, const AddrPair& remote_addr)
+		:PollListner<EventQueueT>(q)
 		,_remote_addr(remote_addr)
-	{}
-	
-	~NetPeer(){
+		,_fd(fd)
+		,_evt_queue(q)
+	{
+		this->template listen<Event>(this->template fd(), [this](fd_t fd){ this->onInput(fd); } );
 	}
-	
-	///Wreturn num of recv bytes, or <0 on failed.
-	virtual int read(char *buf, int len){ throw sockexcpt("don't call it!"); }
-	virtual int write(const char *buf, int len);
+
+	~NetPeerBasic(){ close(); }
 
 	AddrPair remote_addr(){ return _remote_addr; }
 	
-	virtual void close();
-	
+	void close();
 	fd_t fd()const{ return _fd; }
 
-protected:
-	AddrPair _remote_addr;
-	fd_t _fd;
-};
-
-
-
-//////////////////////////////////////////////////////////////
-class NetPeerImpl : public NetPeer
-{
-public:
-	NetPeerImpl(fd_t fd, const AddrPair& remote_addr)
-		:NetPeer(fd, remote_addr)
-	{}
-
-	int read(char* buf, int len)override;
-};
-
-
-//////////////////////////////////////////////////////////////
-class NetPeerUdp : public NetPeer
-{
-public:
-	NetPeerUdp(fd_t fd, const AddrPair& remote_addr)
-		:NetPeer(fd, remote_addr)
-	{
-		memset(&_sockaddr, 0, sizeof(_sockaddr));
-		_sockaddr.sin_family = AF_INET;
-		inet_pton(AF_INET, _remote_addr.ip.c_str(), &(_sockaddr.sin_addr));
-		_sockaddr.sin_port = htons(_remote_addr.port);
-	}
-
-	int read(char* buf, int len)override{ return 0; }
-	void close()override{};
-	int write(const char *buf, int len)override;
+	int write(const MsgWrapper& msg);
 
 private:
-	sockaddr_in _sockaddr;
-	
+	void onInput(fd_t);
+	int read(void *buf, int len);
+	int write(const void* buf, size_t len);
+
+private:
+	AddrPair _remote_addr;
+	fd_t _fd;
+	EventQueueT* _evt_queue=nullptr;
 };
 
-typedef std::shared_ptr<NetPeer> netpeer_ptr_t;
-typedef std::unordered_map<fd_t, netpeer_ptr_t> netpeer_manager_t; 
 }//net
 NAMESP_END
+
+#include "netpeer.inl"
 
 #endif /*NET_PEER_H*/

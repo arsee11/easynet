@@ -3,24 +3,29 @@
 #ifndef EVENT_LISTENER_H
 #define EVENT_LISTENER_H
 
-#ifndef NAMESPDEF_H
+#include <list>
+#include <map>
+#include "fddef.h"
+#include "event.h"
 #include "namespdef.h"
-#endif
 
 NAMESP_BEGIN
 namespace net
 {
 
-class Event;
 
 class EventListener
 {
 public:
-	virtual void onEvent(Event* e)=0;
+	virtual ~EventListener(){}
 		
 };
+
+using listener_list = std::list<EventListener*>;
+using listener_map = std::map<fd_t, listener_list>;
 
 }//net
 NAMESP_END
 
 #endif /*EVENT_LISTENER_H*/
+

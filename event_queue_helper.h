@@ -11,7 +11,7 @@
 #include <typeinfo>
 #include <functional>
 	
-#include "netevents.h"
+//#include "netevents.h"
 
 #ifndef NAMESPDEF_H
 #include "namespdef.h"
@@ -20,11 +20,11 @@
 NAMESP_BEGIN
 namespace net
 {
-
+/*
 ///@brief put thd event into filter chain before process,\n
 /// if filter return true process will break, \n
 /// if return false process continue.
-typedef std::function<bool(Event*)> filter_t;
+typedef std::function<bool(event_ptr)> filter_t;
 
 
 struct FilterHolder 
@@ -35,7 +35,7 @@ struct FilterHolder
 };
 
 
-bool filterNetInput(const FilterHolder& h, Event* e)
+inline bool filterNetInput(const FilterHolder& h, event_ptr e)
 {
 	for(auto i : h._netinput_filters)
 		if( i(e) )
@@ -44,7 +44,7 @@ bool filterNetInput(const FilterHolder& h, Event* e)
 	return false;
 }
 
-bool filterNetAccept(const FilterHolder& h, Event* e)
+inline bool filterNetAccept(const FilterHolder& h, event_ptr e)
 {
 	for(auto i : h._netaccept_filters)
 		if( i(e) )
@@ -56,7 +56,7 @@ bool filterNetAccept(const FilterHolder& h, Event* e)
 
 
 //////////////////////////////////////////////////////////////////////
-typedef std::unordered_map<std::type_index, std::function<bool(FilterHolder&, Event*)> > event_filter_map_t;
+typedef std::unordered_map<std::type_index, std::function<bool(FilterHolder&, event_ptr)> > event_filter_map_t;
 
 template<class E>
 struct AddHandler;
@@ -70,6 +70,7 @@ struct AddHandler<NetInputEvent>
 	}
 };
 
+
 template<>
 struct AddHandler<NetAcceptEvent>
 {
@@ -78,6 +79,22 @@ struct AddHandler<NetAcceptEvent>
 		maps.insert( std::make_pair(std::type_index(typeid(NetAcceptEvent)), filterNetAccept) );
 	}
 };
+*/
+
+template<class EventT, class EventQueueT>
+void postEventMap(Event* evt, EventQueueT* eq, fd_t fd)
+{
+	const listener_map& lmap= eq->findListenerMap(
+		std::type_index(typeid(EventT))
+	);
+
+	if(lmap.size() > 0 )
+	{
+		auto l=lmap.find(fd);
+		if( l!= lmap.end())
+			eq->pushEvent( event_ptr(evt) );
+	}	
+}
 
 }//net
 NAMESP_END

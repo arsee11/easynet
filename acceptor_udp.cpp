@@ -33,7 +33,7 @@ void AcceptorUdp::open()throw(sockexcpt)
 }
 
 
-std::tuple<Event*, NetPeer*> AcceptorUdp::accept()
+void AcceptorUdp::onInput(fd_t fd)
 {
 	AddrPair addr;
 	sockaddr_in inaddr;

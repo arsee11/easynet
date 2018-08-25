@@ -1,38 +1,50 @@
 //acceptor_test.cpp
 
 #include "../acceptor.h"
+#include "../netlisteners.h"
 
 #include <iostream>
 #include <stdio.h>
 
 using namespace arsee::net;
 using namespace std;
+using namespace std::placeholders;
+
+
+struct MySession : public AcceptListener
+{
+	
+	MySession(NetEventQueue* eq)
+		:AcceptListener(eq)
+	{
+		this->listen( std::bind(&MySession::onAccept, this, _1) );
+		//this->l();
+	}
+	
+	void onAccept(fd_t fd)
+	{
+		sockaddr_in addr;
+		socklen_t len = sizeof(addr);	
+		fd_t newfd = ::accept(fd, (sockaddr*)&addr, &len);
+		cout<<"onAccept("<<newfd<<"):"<<inet_ntoa(addr.sin_addr)<<" "<<ntohs(addr.sin_port)<<endl;
+	}
+
+};
 
 int main()
 {
-	sockInit();
-	
+	NetEventQueue eq;
+	AcceptorR a(&eq, 10000);	
+	AcceptorR a2(&eq, 10001);	
+	eq.attach(a.fd());
+	eq.attach(a2.fd());
 
-	Acceptor a(10000);	
-	NetPeer* peer = a.accept();
+	MySession s(&eq);
 
-	if(peer == nullptr)
+	while(true)
 	{
-		cout<<"connect failed"<<endl;
-		return 1;
+		eq.process();
 	}
-	
-	cout<<"netpeer:{"<<peer->remote_addr().port<<","<<peer->remote_addr().ip<<"}"<<endl;
 
-	string buf="Hello, I am Server";
-	int len = peer->write(buf.c_str(), buf.size());
-	cout <<len<<" bytes sent"<<endl;
-	char rbuf[32]={0};
-	len = peer->read(rbuf, 31);
-	cout <<len<<" bytes recv:"<<rbuf<<endl;
-	
-	cout<<"bye"<<endl;
-
-	sockUninit();
-	
+	s.unlisten();
 }

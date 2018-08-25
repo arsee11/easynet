@@ -3,9 +3,7 @@
 #ifndef FDDEF_H
 #define FDDEF_H
 
-#ifndef NAMESPDEF_H
 #include "namespdef.h"
-#endif
 
 NAMESP_BEGIN
 namespace net

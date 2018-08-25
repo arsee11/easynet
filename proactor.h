@@ -20,7 +20,7 @@ namespace net
 {
 
 //////////////////////////////////////////////////////////////////////////////
-template<class Selector, class Acceptor>
+template<class Selector, class Acceptor, class EventQueue>
 class Proactor
 {
 	typedef Proactor<Selector, Acceptor> my_t;
@@ -45,10 +45,10 @@ public:
 		_acceptor = a;
 	}
 	
-	Proactor(EventQueue* eq):_event_queue(eq){
+	Proactor(){
 		using namespace std::placeholders;
-		_event_queue->addFilter<NetInputEvent>( std::bind(&my_t::filterNetInput, this, _1) );
-		_event_queue->addFilter<NetAcceptEvent>( std::bind(&my_t::filterNetAccept, this, _1) );
+		_event_queue.addFilter<NetInputEvent>( std::bind(&my_t::filterNetInput, this, _1) );
+		_event_queue.addFilter<NetAcceptEvent>( std::bind(&my_t::filterNetAccept, this, _1) );
 	}
 	
 private:

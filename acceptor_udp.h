@@ -27,6 +27,7 @@ namespace net
 class Event;
 class NetPeer;
 class NetPeerUdp;
+class Selector;
 
 class AcceptorUdp 
 {
@@ -34,17 +35,15 @@ public:
 	typedef fd_t netpeer_key_t;
 
 public:
-	AcceptorUdp(const AddrPair& local_addr, bool isopen=true)throw(sockexcpt)
+	AcceptorUdp(EventQueue* q, const AddrPair& local_addr)throw(sockexcpt)
 		:_local_addr(local_addr)
 	{
-		if(isopen)
-			open();
+		open();
 	}
 
-	AcceptorUdp(unsigned short local_port, bool isopen=true)throw(sockexcpt){
+	AcceptorUdp(EventQueue* q, unsigned short local_port)throw(sockexcpt){
 		_local_addr.port = local_port;
-		if(isopen)
-			open();
+		open();
 	}
 
 	~AcceptorUdp(){
@@ -58,11 +57,11 @@ public:
 			::close(_fd);
 	}
 
-	std::tuple<Event*, NetPeer*> accept();
-
 	fd_t fd(){ return _fd; }
 
-	netpeer_ptr_t getPeer(netpeer_key_t key){ return nullptr; }
+	netpeer_ptr_t getPeer(const AddrPair& remote){ return nullptr; }
+
+	void onInut(fd_t fd);
 
 private:
 	NetPeerUdp* findPeer(const AddrPair& addr);
@@ -75,6 +74,7 @@ private:
 	std::unordered_map<AddrPair, NetPeerUdp*, addr_hash_value> _netpeer_set;
 	static constexpr int MAX_BUF_LEN = 1400*10;
 	char _recvbuf[MAX_BUF_LEN];
+	EventQueue* _evt_queue;
 };
 
 }//net

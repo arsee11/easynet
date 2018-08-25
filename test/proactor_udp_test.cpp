@@ -11,54 +11,66 @@
 #include "../netevent_listener.h"
 
 using namespace std;
+using namespace std::placeholders;
 using namespace arsee::net;
 
-typedef ProactorUdp<Epoll> proactor_t;
 
-class MyNetEventListener: public NetworkEventListener
+class NetSession
 {
 public: 
-	void onNewPeer(NetPeer* conn)
+	NetSeesion(NetPeer* peer)
+		:_peer(peer)
 	{
-		cout<<"new peer{"<<conn->remote_addr().ip<<","<<conn->remote_addr().port<<"}"<<endl;	
-	}	
+		peer->listen<NetPeer::InputEvent>(std::bind(&NetSession::onInput, this, _1, _w));
+	}
 
-	void onInput(const void* buf, size_t len, NetPeer* conn)
+
+	void onInput(const void* buf, size_t len)
 	{
-		cout<<conn<<",recv{"<<conn->remote_addr().ip<<","<<conn->remote_addr().port<<"}";
+		cout<<"recv{"<<_peer->remote_addr().ip<<","<<_peer->remote_addr().port<<"}";
 		cout<<"("<<len<<"):"<<(const char*)buf<<endl;	
-		conn->write((char*)buf, len);
+		peer->write((char*)buf, len);
 	}	
 
-	void onOutput(NetPeer* conn)
+	void onOutput(size_t bytesSent)
 	{
-		
+		cout<<"sent{"<<_peer->remote_addr().ip<<","<<_peer->remote_addr().port<<"}";
+		cout<<"("<<len<<")"<<endl;
 	}
 
 
-	void onClose(NetPeer* conn)
+	void onClose()
 	{
+		cout<<"close{"<<_peer->remote_addr().ip<<","<<_peer->remote_addr().port<<"}";
 	}
 
+private:
+	NetPeer* _peer;
 };
+
+void onAccept(NetPeer* peer)
+{
+	cout<<"accept{"<<peer->remote_addr().ip<<","<<peer->remote_addr().port<<"}";
+}
 
 int main( )
 {
-	AcceptorUdp a(1261, false);
-	a.open();
-
-	MyNetEventListener l;
-	l.listen<NetInputEvent>();
-	//l.listen<NetAcceptEvent>();
-	//l.listen<NetCloseEvent>();
+	
+	Proactor p;
 	EventQueue eq;
-	eq.addListener(&l);
+	eq.addAddFilter(&p);
 
-	proactor_t p(&eq);
-	p.setAcceptor(&a);
+	AcceptorUdp a(&eq, 1261, false);
+	a.listen<NetAccepptEvent>(onAccept);
+
+	NetPeer* peer = a.getPeer(AddrPair("127.0.0.1", 1261);
+	NetSession session(peer);
+
 
 	while(true)
-		p.run();
+	{
+		eq.poll();
+	}
 
 	return 0;
 };

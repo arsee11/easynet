@@ -29,7 +29,7 @@
 #include <unistd.h>
 #endif
 
-#include <string>
+#include <string.h>
 
 
 NAMESP_BEGIN
@@ -79,35 +79,36 @@ struct addr_hash_value
 	}
 };
 
-inline std::string getip(sockaddr_in* addr){
+inline std::string getip(const sockaddr_in* addr){
 	char str[16] = {0};
 	return inet_ntop(AF_INET, (void*)&(addr->sin_addr), str, 16);
 }
 
-inline uint16_t getport(sockaddr_in* addr){
+inline uint16_t getport(const sockaddr_in* addr){
 	return ntohs(addr->sin_port);
 }
 
-inline bool sockInit(){
-#if defined(_MSC_VER)
-	WSADATA wsaData;
-	int r = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (r != NO_ERROR)
-	{
-       		return false;
-	}
-#endif	
-	return true;
+inline AddrPair makeAddrPair(const sockaddr_in* inaddr)
+{
+	return AddrPair{getport(inaddr), getip(inaddr)};
 }
 
-inline bool sockUninit(){
-#if defined(_MSC_VER)
-	return WSACleanup()==0;
-#else
-	return true;
-#endif
+inline void makeSockaddr(const AddrPair& addr, sockaddr* saddr, socklen_t& nsaddr)
+{
+	sockaddr_in inaddr;
+	::memset(&inaddr, 0, sizeof(inaddr));
+	inaddr.sin_family = AF_INET;
+	if(addr.ip.empty())
+		inaddr.sin_addr.s_addr = INADDR_ANY;
+	else
+		::inet_pton(AF_INET, addr.ip.c_str(), &(inaddr.sin_addr));
+
+	inaddr.sin_port = htons(addr.port);
+
+	nsaddr = sizeof inaddr;
+	::memcpy(saddr, &inaddr, nsaddr);
 }
-	
+
 }//net
 NAMESP_END
 

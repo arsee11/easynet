@@ -5,12 +5,12 @@
 #ifndef EVENT_QUEUE_H
 #define EVENT_QUEUE_H
 
-#include "event_queue_helper.h"	
-#include "event_listener.h"	
+#include "event.h"
+#include "event_listener.h"
+#include <deque>
+#include <unordered_map>
 
-#ifndef NAMESPDEF_H
 #include "namespdef.h"
-#endif
 
 NAMESP_BEGIN
 namespace net
@@ -18,71 +18,62 @@ namespace net
 
 ///@breif take onwership of Event.
 class EventQueue
-{
+{ 
 public:
-	template<class E>
+/*	template<class E>
 	void addFilter(const filter_t& f){
 		AddHandler<E>::addFilter(_event_filter_map, _filters, f);		
-	
+	}
+*/
+
+	void pushEvent(const event_ptr& e){ _events.push_back(e); }
+
+	inline void bind(std::type_index evttype, EventListener* l); 
+	inline void unbind(std::type_index evttype, EventListener* l ); 
+	inline const listener_list& findListenerList(std::type_index evttype)const{ 
+		const auto& i = _type_listener_map.find(evttype);
+		if(i!=_type_listener_map.end())
+			return i->second;
+
+		return _empty_list;
 	}
 
-	void addListener(EventListener* l){
-		_listeners.push_back(l);			
-		
+	inline void bindfd(std::type_index evttype, fd_t fd, EventListener* l); 
+	inline void unbindfd(std::type_index evttype, fd_t fd); 
+	inline const listener_map& findListenerMap(std::type_index evttype)const{ 
+		const auto& i = _fd_listener_map.find(evttype);
+		if(i!=_fd_listener_map.end())
+			return i->second;
+
+		return _empty_map;
 	}
 
-	void pushEvent(Event* e){
-		_events.push_back(e);
-	}
-
-
-	void process(){
-		auto i = _events.begin();
-		for(; i != _events.end();)
-		{
-			Event *e = *i;
-			i = _events.erase(i);
-			//if filter return true, break the event process
-			if(filter(e))
-			{
-				delete e;
-				return;
-			}
-
-			process(e);
-		}
-
-	}
-
-	void process(Event* e){
-		for(auto l : _listeners)
-			l->onEvent(e);
-
-		delete e;
-	}
+	inline void process();
+	void process(event_ptr& e){ e->fire();}
 
 private:
 	//return true if want to break the event process.
-	bool filter(Event* e){
-		auto i = _event_filter_map.find( std::type_index( typeid(*e)) );
-		if( i != _event_filter_map.end() )
-			return i->second(_filters, e);
-
-		return false;
-	}
-
+//	inline bool filter(event_ptr e);
 private:
-	event_filter_map_t _event_filter_map;
+//	FilterHolder _filters;
+//	event_filter_map_t _event_filter_map;
 
-	typedef std::list<Event*> event_list_t;
-	event_list_t _events;
+	typedef std::deque<event_ptr> event_queue;
+	event_queue _events;
 
-	typedef std::list<EventListener*> event_listener_list_t;
-	event_listener_list_t _listeners;
-	FilterHolder _filters;
+	typedef std::unordered_map<std::type_index, listener_list> event_type_listener_map;
+	event_type_listener_map _type_listener_map;
+	
+	typedef std::unordered_map<std::type_index, listener_map> event_fd_listener_map;
+	event_fd_listener_map _fd_listener_map;
+
+	listener_list _empty_list;
+	listener_map _empty_map;
 };
 
 }//net
 NAMESP_END
+
+#include "event_queue.inl"
 
 #endif /*EVENT_QUEUE_H*/

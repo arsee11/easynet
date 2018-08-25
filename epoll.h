@@ -6,57 +6,40 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <exception>
-#include <vector>
-#include <stdio.h>
+#include <unordered_map>
 
-#ifndef FD_DEF_H 
-#include "fddef.h"
-#endif
-
-#include "netevents.h"
-
-#ifndef NAMESPDEF_H
+#include "pollevents.h"
 #include "namespdef.h"
-#endif
 
 
 NAMESP_BEGIN
 namespace net
 {
+
+
+template<class EventQueue>
 class Epoll
 {
+	static constexpr int _max = 2048;
 public:
-	typedef std::vector<Event*> event_set_t;
-
-public:
-	Epoll(){
+	Epoll(EventQueue* q):_evt_queue(q){
 		init();
 	}
 
-	void listenfd(fd_t fd)
-	{
-		_listenfd = fd;
-		attach(fd);
-	}
-
-	void attach(fd_t fd);
+	bool attach(fd_t fd);
 	void detach(fd_t fd){
 		if( epoll_ctl(_efd, EPOLL_CTL_DEL, fd, NULL) == -1)
-		{
 			perror("epoll_ctl");
-		}
 	}
 
-	event_set_t select();
+	void select();
 
 	void postSend(fd_t fd){
 		epoll_event tmp;
 		tmp.data.fd = fd;
 		tmp.events = EPOLLET|EPOLLOUT;
 		if( epoll_ctl(_efd, EPOLL_CTL_MOD, fd, &tmp)==-1 ) 
-		{
 			perror("epoll_ctl");
-		}
 	}
 
 	void postRecv(fd_t fd){
@@ -64,9 +47,7 @@ public:
 		tmp.data.fd = fd;
 		tmp.events = EPOLLET|EPOLLIN;
 		if( epoll_ctl(_efd, EPOLL_CTL_MOD, fd, &tmp)==-1 ) 
-		{
 			perror("epoll_ctl");
-		}
 	}
 
 private:
@@ -79,13 +60,17 @@ private:
 		}
 	}
 
+	template<class Event>
+	void postEvent(fd_t fd);
+
 private:
-	fd_t _efd;
-	fd_t _listenfd;
-	static constexpr int _max = 2048;
+	int _efd;
+	EventQueue* _evt_queue=nullptr;
 };
 
 }//namespace net
 NAMESP_END
+
+#include "epoll.inl"
 
  #endif /*EPOLL_H*/

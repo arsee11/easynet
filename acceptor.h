@@ -1,73 +1,32 @@
 //acceptor.h
-//copyright	:Copyright (c) 2014 arsee.
-//license	:GNU GPL V2.
 
 #ifndef ACCEPTOR_H
 #define ACCEPTOR_H
 
-#ifndef FD_DEF_H
-#include "fddef.h"
-#endif
-
-#ifndef ADDR_H
-#include "addr.h"
-#endif
-
+#include "acceptor_basic.h"
+#include "acceptor_reactor.h"
+#include "acceptor_completed.h"
+#include "netevent_queue.h"
 #include "netpeer.h"
+#include "msg.h"
 
-#ifndef NAMESPDEF_H
-#include "namespdef.h"
-#endif
-
+#include <memory>
 
 NAMESP_BEGIN
 namespace net
 {
 
-class Event;
+using Acceptor=AcceptorBasic<NetEventQueue>; 
 
-class Acceptor 
-{ 
-public:
-	typedef fd_t netpeer_key_t;
 
-public:
-	Acceptor(const AddrPair& local_addr, bool isopen=true)throw(sockexcpt)
-		:_local_addr(local_addr)
-	{
-		if(isopen)
-			open();
-	}
+///Reactor Acceptor
+using AcceptorR = AcceptorReactor<NetEventQueue, Acceptor>;
 
-	Acceptor(unsigned short port, bool isopen=true)throw(sockexcpt){
-		_local_addr.port = port;
-		if(isopen)
-			open();
-	}
+using NetPeer = NetPeerBasic<NetEventQueue, MsgSt>;
+using netpeer_ptr = std::shared_ptr<NetPeer>;
 
-	~Acceptor(){
-		close();
-	}
-
-	void open()throw(sockexcpt);
-
-	void close(){
-		if(_isopened)
-			::close(_fd);
-	}
-
-	std::tuple<Event*, NetPeer*> accept();
-
-	fd_t fd(){ return _fd; }
-
-	netpeer_ptr_t getPeer(netpeer_key_t key){ return _netpeers[key]; }
-
-private:
-	fd_t _fd;
-	AddrPair _local_addr;
-	bool _isopened=false;
-	netpeer_manager_t _netpeers;
-};
+///Completed Acceptor
+using AcceptorC =AcceptorCompleted<NetEventQueue, Acceptor, NetPeer, netpeer_ptr>; 
 
 }//net
 NAMESP_END
