@@ -162,6 +162,9 @@ public:
 
 };
 
+
+////////////////////////////////////////////////////////////////////////////////
+//
 template<class EventQueueT, class NetPeerPtr>
 class CloseCompletedEvent : public AcceptCompletedEvent<EventQueueT, NetPeerPtr>
 {
@@ -172,6 +175,40 @@ public:
 	}
 };
 
+
+////////////////////////////////////////////////////////////////////////////////
+//
+
+#define IN_U_PARAMS AddrPair, MsgWrapper
+#define IN_U_PARAMS_N const AddrPair& peer, MsgWrapper msg
+
+template<class MsgWrapper>
+using UInDataHandler= std::function<void(IN_U_PARAMS_N)>;
+
+template<class EventQueueT, class MsgWrapper>
+using UdpInputListenerT = EventListenerBasic<EventQueueT
+	,UInDataHandler<MsgWrapper>, IN_U_PARAMS>;
+
+template<class EventQueueT, class MsgWrapper>
+class UdpInputEvent : public NetEvent<
+	UdpInputListenerT<EventQueueT, MsgWrapper>, IN_U_PARAMS> 
+{ 
+public:
+	using Base=NetEvent<
+		UdpInputListenerT<EventQueueT, MsgWrapper>, IN_U_PARAMS>;
+
+public: 
+	UdpInputEvent(const listener_list& ls, IN_U_PARAMS_N)
+		:Base(ls, peer, msg)
+	{
+	}
+
+	void fire()override{ this->template call<0,1>(); }
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////
 }//net
 NAMESP_END
 

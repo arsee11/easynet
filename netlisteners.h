@@ -91,6 +91,23 @@ public:
 	}
 };
 
+using UdpInputE=UdpInputEvent<NetEventQueue, MsgSt>;
+class UdpInputListener : public UdpInputE::listener_t
+{
+public:
+	UdpInputListener(NetEventQueue* q)
+		:UdpInputE::listener_t(q)
+	{
+	}
+
+	void listen(fd_t fd, const evthandler_t& h){
+		UdpInputE::listener_t::listen<UdpInputE>(fd, h);
+	}
+
+	void unlisten(fd_t fd){
+		UdpInputE::listener_t::unlisten<UdpInputE>(fd);
+	}
+};
 }//net
 NAMESP_END
 
