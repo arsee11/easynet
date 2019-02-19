@@ -63,10 +63,13 @@ int NetPeerBasic<EventQueueT,  MsgWrapper>::write(const void *buf, size_t len)
 	do
 	{
 		int m = send(_fd, (const char*)buf+n, len-n, 0);
-		if(m < 0 )
-			break;
-
-		n += m;
+		if(m < 0)
+		{
+			if(errno != EAGAIN && errno != EWOULDBLOCK )
+				break;
+		}
+		else
+			n += m;
 	}while( n < len );
 
 	return n;
