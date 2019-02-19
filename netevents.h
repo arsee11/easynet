@@ -1,4 +1,4 @@
-//netevents.h
+﻿//netevents.h
 
 #ifndef NET_EVENTS_H
 #define NET_EVENTS_H
@@ -73,10 +73,7 @@ public:
 	}
 
 	void fire()override{
-		for(auto& i : this->_listeners)
-		{
-			this->template call<0>();
-		}
+                this->template call<0>();
 	}
 };
 

@@ -1,4 +1,4 @@
-//addr.h
+﻿//addr.h
 //copyright	: Copyright (c) 2014 arsee.
 //author	: arsee
 
@@ -72,7 +72,6 @@ inline bool operator==(const AddrPair& rhs, const AddrPair& lhs){
 struct addr_hash_value
 {
 	size_t operator()(const AddrPair& addr)const{
-		size_t seed=0;
 		size_t h1 = std::hash<unsigned short>()(addr.port);
 		size_t h2 = std::hash<std::string>()(addr.ip);
 		return h1 ^ (h2<<1);

@@ -1,4 +1,4 @@
-//epoll.inl
+﻿//epoll.inl
 
 
 NAMESP_BEGIN
@@ -55,7 +55,7 @@ template<class EventQueue>
 void Epoll<EventQueue>::select()
 {
 	epoll_event ehs[_max];
-	int nfds = epoll_wait(_efd, ehs, _max, -1);
+        int nfds = epoll_wait(_efd, ehs, _max, 1000);
 	if(nfds == -1)
 	{
 		perror("epoll_wait");
@@ -68,7 +68,7 @@ void Epoll<EventQueue>::select()
 		return;
 	}
 
-	for(size_t i=0; i<nfds; ++i)
+        for(int i=0; i<nfds; ++i)
 	{			
 		fd_t fd = ehs[i].data.fd;
 		if(ehs[i].events&EPOLLIN || ehs[i].events&EPOLLPRI)

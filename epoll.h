@@ -1,4 +1,4 @@
-//epoll.h
+﻿//epoll.h
 
 #ifndef EPOLL_H	
 #define EPOLL_H	
@@ -32,7 +32,7 @@ public:
 			perror("epoll_ctl");
 	}
 
-	void select();
+        void select();
 
 	void postSend(fd_t fd){
 		epoll_event tmp;

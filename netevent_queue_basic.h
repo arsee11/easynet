@@ -1,4 +1,4 @@
-///netevent_queue_basic.h
+﻿///netevent_queue_basic.h
 //
 //
 
@@ -29,7 +29,7 @@ public:
 		std::cout<<"~NetEventQueueBasic()"<<std::endl;
 	}
 
-	void process(){
+        void process(){
 		_poller->select();
 		EventQueue::process();
 	}
