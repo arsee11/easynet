@@ -12,12 +12,12 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	if(argc < 3){
-		cout<<"usage: cmd [remote ip] [remote port]\n";
+	if(argc < 2){
+		cout<<"usage: cmd [local port]\n";
 		return 0;
 	}
 
-	int port = atoi(argv[2]);
+	int port = atoi(argv[1]);
 	sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -36,17 +36,15 @@ int main(int argc, char** argv)
 	
 	sockaddr_in inaddr;
 	::memset(&inaddr, 0, sizeof(inaddr));
-	inaddr.sin_family = AF_INET;
-	::inet_pton(AF_INET, argv[1], &(inaddr.sin_addr));
-	inaddr.sin_port = htons(port);
+    socklen_t naddr=sizeof(inaddr);
 
 	char buf[24]={0};
 	int size=2;
-	int n=50000000;
+	int n=5000000;
 	auto t1=chrono::high_resolution_clock::now();
 	for(int i=0; i<n; i++){
-		sendto(fd, buf, size, 0, (sockaddr*)&inaddr, sizeof(inaddr));
-		//write(fd, buf, size);
+		recvfrom(fd, buf, size, 0, (sockaddr*)&inaddr, &naddr);
+		//read(fd, buf, size);
 	}
 	auto t2=chrono::high_resolution_clock::now();
 	auto d=t2-t1;
