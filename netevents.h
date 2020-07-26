@@ -5,6 +5,7 @@
 
 #include "event.h"
 #include "fddef.h"
+#include "addr.h"
 #include "event_listener_basic.h"
 #include "namespdef.h"
 
@@ -16,64 +17,21 @@ NAMESP_BEGIN
 namespace net
 {
 
-///@param I index 1,2,3,...,n
-///@param Func funtion with n args
-///@param Tuple std::tuple instance
-template<size_t... I, typename Func, typename Tuple>
-void call_tuple_arg(const Func& f, const Tuple& t){
-	f( std::get<I>(t)... );
-}
-
-
-template<class Listener, class... Params>
-class NetEvent: public Event
-{
-public:
-	using listener_t = Listener;
-
-public:
-	NetEvent(const listener_list& ls, Params... params)
-		:_listeners(ls)
-	{
-		_tuple = std::make_tuple(params...);
-	}
-
-protected:
-
-	template<int... I>
-	void call(){
-		for(auto& i : this->_listeners)
-		{
-			listener_t *l = static_cast<listener_t*>(i);
-			call_tuple_arg<I...>(*l, this->_tuple);
-		}
-	}
-	
-
-protected:
-	listener_list _listeners;
-	std::tuple<Params...> _tuple;
-};
-
-
-using FdHandler = std::function<void(fd_t)>;
+using NHandler = std::function<void()>;
 
 template<class EventQueueT>
-using FdListener = EventListenerBasic<EventQueueT, FdHandler, fd_t>;  
+using NListener = EventListenerBasic<EventQueueT, NHandler>;  
 
 template<class EventQueueT>
-class NetInputEvent : public NetEvent<FdListener<EventQueueT>,fd_t>
+class NetInputEvent : public EventBasic<NListener<EventQueueT>>
 {
-	using Base = NetEvent<FdListener<EventQueueT>, fd_t>;
-
 public:
-	NetInputEvent(const listener_list& ls, fd_t fd)
-		:Base(ls, fd)
+	NetInputEvent()
 	{
 	}
 
 	void fire()override{
-                this->template call<0>();
+                this->template call();
 	}
 };
 
@@ -82,19 +40,22 @@ template<class EventQueueT>
 class NetCloseEvent : public NetInputEvent<EventQueueT>
 {
 public:
-	NetCloseEvent(const listener_list& ls, fd_t fd)
-		:NetInputEvent<EventQueueT>(ls, fd)
+	NetCloseEvent()
+		:NetInputEvent<EventQueueT>()
 	{
 	}
 };
 
 template<class EventQueueT>
-class NetAcceptEvent : public NetInputEvent<EventQueueT> 
+class NetAcceptEvent : public NetInputEvent<EventQueueT>
 {
 public:
-	NetAcceptEvent(const listener_list& ls, fd_t fd)
-		:NetInputEvent<EventQueueT>(ls, fd)
+	NetAcceptEvent()
 	{
+	}
+
+	void fire()override{
+                this->template call();
 	}
 };
 
@@ -115,16 +76,16 @@ using InputCompletedListener = EventListenerBasic<EventQueueT
 	,InDataHandler<NetPeerPtr, MsgWrapper>, IN_C_PARAMS>;
 
 template<class EventQueueT, class NetPeerPtr, class MsgWrapper>
-class InputCompletedEvent : public NetEvent<InputCompletedListener<
+class InputCompletedEvent : public EventBasic<InputCompletedListener<
 	EventQueueT, NetPeerPtr, MsgWrapper> , IN_C_PARAMS> 
 { 
 public:
-	using Base=NetEvent<InputCompletedListener<
+	using Base=EventBasic<InputCompletedListener<
 		EventQueueT, NetPeerPtr, MsgWrapper>, IN_C_PARAMS>;
 
 public: 
-	InputCompletedEvent(const listener_list& ls, IN_C_PARAMS_N)
-		:Base(ls, peer, msg)
+	InputCompletedEvent(IN_C_PARAMS_N)
+		:Base( peer, msg)
 	{
 	}
 
@@ -145,13 +106,13 @@ template<class EventQueueT, class NetPeerPtr>
 using AcceptCompletedListener = EventListenerBasic<EventQueueT, PeerHandler<NetPeerPtr>, A_C_PARAMS>;
 
 template<class EventQueueT, class NetPeerPtr>
-class AcceptCompletedEvent: public NetEvent<AcceptCompletedListener<EventQueueT,NetPeerPtr> , A_C_PARAMS>
+class AcceptCompletedEvent: public EventBasic<AcceptCompletedListener<EventQueueT,NetPeerPtr> , A_C_PARAMS>
 {
-	using Base=NetEvent<AcceptCompletedListener<EventQueueT,NetPeerPtr>, A_C_PARAMS>;
+	using Base=EventBasic<AcceptCompletedListener<EventQueueT,NetPeerPtr>, A_C_PARAMS>;
 
 public:
-	AcceptCompletedEvent(const listener_list& ls, A_C_PARAMS_N)
-		:Base(ls, peer)
+	AcceptCompletedEvent(A_C_PARAMS_N)
+		:Base( peer)
 	{
 	}
 
@@ -166,8 +127,8 @@ template<class EventQueueT, class NetPeerPtr>
 class CloseCompletedEvent : public AcceptCompletedEvent<EventQueueT, NetPeerPtr>
 {
 public:
-	CloseCompletedEvent(const listener_list& ls, A_C_PARAMS_N)
-		:AcceptCompletedEvent<EventQueueT, NetPeerPtr>(ls, peer)
+	CloseCompletedEvent(A_C_PARAMS_N)
+		:AcceptCompletedEvent<EventQueueT, NetPeerPtr>( peer)
 	{
 	}
 };
@@ -187,16 +148,16 @@ using UdpInputListenerT = EventListenerBasic<EventQueueT
 	,UInDataHandler<MsgWrapper>, IN_U_PARAMS>;
 
 template<class EventQueueT, class MsgWrapper>
-class UdpInputEvent : public NetEvent<
+class UdpInputEvent : public EventBasic<
 	UdpInputListenerT<EventQueueT, MsgWrapper>, IN_U_PARAMS> 
 { 
 public:
-	using Base=NetEvent<
+	using Base=EventBasic<
 		UdpInputListenerT<EventQueueT, MsgWrapper>, IN_U_PARAMS>;
 
 public: 
-	UdpInputEvent(const listener_list& ls, IN_U_PARAMS_N)
-		:Base(ls, peer, msg)
+	UdpInputEvent(IN_U_PARAMS_N)
+		:Base( peer, msg)
 	{
 	}
 

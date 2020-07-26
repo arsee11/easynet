@@ -5,14 +5,14 @@
 
 #include "udppeer_basic.h"
 #include "msg.h"
-#include "netevent_queue.h"
+#include "event_queue_epoll.h"
 #include "namespdef.h"
 
 NAMESP_BEGIN
 namespace net
 {
 
-using UdpPeer = UdpPeerBasic<NetEventQueue, MsgSt>;
+using UdpPeer = UdpPeerBasic<EventQueueEpoll, MsgSt>;
 
 }//net
 NAMESP_END

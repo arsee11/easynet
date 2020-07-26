@@ -3,10 +3,9 @@
 #ifndef ACCEPTOR_H
 #define ACCEPTOR_H
 
-#include "acceptor_basic.h"
 #include "acceptor_reactor.h"
 #include "acceptor_completed.h"
-#include "netevent_queue.h"
+#include "event_queue_epoll.h"
 #include "netpeer.h"
 #include "msg.h"
 
@@ -16,17 +15,14 @@ NAMESP_BEGIN
 namespace net
 {
 
-using Acceptor=AcceptorBasic<NetEventQueue>; 
-
-
 ///Reactor Acceptor
-using AcceptorR = AcceptorReactor<NetEventQueue, Acceptor>;
+using AcceptorR = AcceptorReactor<EventQueueEpoll>;
 
-using NetPeer = NetPeerBasic<NetEventQueue, MsgSt>;
+using NetPeer = NetPeerBasic<EventQueueEpoll, MsgSt>;
 using netpeer_ptr = std::shared_ptr<NetPeer>;
 
 ///Completed Acceptor
-using AcceptorC =AcceptorCompleted<NetEventQueue, Acceptor, NetPeer, netpeer_ptr>; 
+using AcceptorC =AcceptorCompleted<EventQueueEpoll, NetPeer, netpeer_ptr>; 
 
 }//net
 NAMESP_END

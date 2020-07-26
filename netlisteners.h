@@ -3,7 +3,7 @@
 #ifndef	NET_LISTENERS_H 
 #define NET_LISTENERS_H 
 
-#include "netevent_queue.h"
+#include "event_queue_epoll.h"
 #include "netevents.h"
 #include "netpeer.h"
 #include "msg.h"
@@ -14,33 +14,16 @@ NAMESP_BEGIN
 namespace net
 {
 
-using AcceptEvent = NetAcceptEvent<NetEventQueue>;
+using AcceptEvent = NetAcceptEvent<EventQueueEpoll>;
 
-class AcceptListener : public AcceptEvent::listener_t
-{
-public:
-	AcceptListener(NetEventQueue* q)
-		:AcceptEvent::listener_t(q)
-	{
-	}
-
-	void listen(const evthandler_t& h){
-		AcceptEvent::listener_t::listen<AcceptEvent>(h);
-	}
-
-	void unlisten(){
-		AcceptEvent::listener_t::unlisten<AcceptEvent>();
-	}
-};
-
-using NetPeer = NetPeerBasic<NetEventQueue, MsgSt>;
+using NetPeer = NetPeerBasic<EventQueueEpoll, MsgSt>;
 using netpeer_ptr = std::shared_ptr<NetPeer>;
 
-using AcceptCmpEvent= AcceptCompletedEvent<NetEventQueue, netpeer_ptr>;
+using AcceptCmpEvent= AcceptCompletedEvent<EventQueueEpoll, netpeer_ptr>;
 class AcceptCmpListener : public AcceptCmpEvent::listener_t
 {
 public:
-	AcceptCmpListener(NetEventQueue* q)
+	AcceptCmpListener(EventQueueEpoll* q)
 		:AcceptCmpEvent::listener_t(q)
 	{
 	}
@@ -55,11 +38,11 @@ public:
 };
 
 
-using CloseCmpEvent= CloseCompletedEvent<NetEventQueue, netpeer_ptr>;
+using CloseCmpEvent= CloseCompletedEvent<EventQueueEpoll, netpeer_ptr>;
 class CloseCmpListener : public CloseCmpEvent::listener_t
 {
 public:
-	CloseCmpListener(NetEventQueue* q)
+	CloseCmpListener(EventQueueEpoll* q)
 		:CloseCmpEvent::listener_t(q)
 	{
 	}
@@ -73,11 +56,11 @@ public:
 	}
 };
 
-using InputCmpEvent= InputCompletedEvent<NetEventQueue, netpeer_ptr, MsgSt>;
+using InputCmpEvent= InputCompletedEvent<EventQueueEpoll, netpeer_ptr, MsgSt>;
 class InputCmpListener : public InputCmpEvent::listener_t
 {
 public:
-	InputCmpListener(NetEventQueue* q)
+	InputCmpListener(EventQueueEpoll* q)
 		:InputCmpEvent::listener_t(q)
 	{
 	}
@@ -91,11 +74,11 @@ public:
 	}
 };
 
-using UdpInputE=UdpInputEvent<NetEventQueue, MsgSt>;
+using UdpInputE=UdpInputEvent<EventQueueEpoll, MsgSt>;
 class UdpInputListener : public UdpInputE::listener_t
 {
 public:
-	UdpInputListener(NetEventQueue* q)
+	UdpInputListener(EventQueueEpoll* q)
 		:UdpInputE::listener_t(q)
 	{
 	}
