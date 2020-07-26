@@ -6,64 +6,26 @@ NAMESP_BEGIN
 namespace net
 {
 
-inline void EventQueue::bind(std::type_index evttype, EventListener* l){ 
-	const auto& i = _type_listener_map.find(evttype);
-	if( i == _type_listener_map.end())
-	{
-		listener_list ls;
-		ls.push_back(l);
-		_type_listener_map.insert(std::make_pair(evttype, ls) );
-	}
-	else
-		i->second.push_back(l);
+template<
+	template<class> class Poller
+>
+void EventQueue<Poller>::bind(fd_t fd, event_ptr e){
+	_poller.addInput(fd, e);
 }
 
-inline void EventQueue::unbind(std::type_index evttype, EventListener* l){
-	const auto& i = _type_listener_map.find(evttype);
-	if( i == _type_listener_map.end())
-	{
-		i->second.remove(l);
-	}
+template<
+	template<class> class Poller
+>
+void EventQueue<Poller>::unbind(fd_t fd){
 }
 
-inline void EventQueue::bindfd(std::type_index evttype, fd_t fd, EventListener* l){ 
-	const auto& i = _fd_listener_map.find(evttype);
-	if( i == _fd_listener_map.end())
+template<
+	template<class> class Poller
+>
+void EventQueue<Poller>::process(){
+	auto events = _poller.select();
+	for(auto e : events)
 	{
-		listener_list ls;
-		ls.push_back(l);
-		listener_map lsm;
-		lsm.insert( std::make_pair(fd, ls) );
-		_fd_listener_map.insert(std::make_pair(evttype, lsm) );
-	}
-	else
-	{
-		auto j = i->second.find(fd);
-		if(j == i->second.end() )
-		{
-			listener_list ls;
-			ls.push_back(l);
-			i->second.insert( std::make_pair(fd, ls) );
-		}
-		else
-			j->second.push_back(l);
-
-	}
-}
-
-inline void EventQueue::unbindfd(std::type_index evttype, fd_t fd){
-	const auto& i = _fd_listener_map.find(evttype);
-	if( i != _fd_listener_map.end())
-	{
-		i->second.erase(fd);
-	}
-}
-
-inline void EventQueue::process(){
-	while(!_events.empty() )
-	{
-		event_ptr e = _events.front();
-		_events.pop_front();
 		//if filter return true, break the event process
 		/*if(filter(e))
 			return;

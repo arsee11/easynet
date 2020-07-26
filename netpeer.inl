@@ -3,51 +3,41 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "event_queue_helper.h"
+#include <iostream>
 	
 NAMESP_BEGIN
 namespace net
 {
 
 template<class EventQueueT, class MsgWrapper>
-void NetPeerBasic<EventQueueT,  MsgWrapper>::onInput(fd_t fd)
+void NetPeerBasic<EventQueueT,  MsgWrapper>::onInput()
 {
-	MsgWrapper msg(10240);
-	int rsize=read(msg.begin(), msg.maxsize());
-	msg.size(rsize);
-
-	if(rsize > 0 )
+	while(true)
 	{
-		const listener_map& lmap= _evt_queue->findListenerMap(
-			std::type_index(typeid(CompletedEvent))
-		);
+		MsgWrapper msg(10240);
+		int rsize=read(msg.begin(), msg.maxsize());
+		msg.size(rsize);
 
-		if(lmap.size() > 0 )
-		{
-			auto l=lmap.find(fd);
-			if( l!= lmap.end())
-				_evt_queue->pushEvent( event_ptr(
-					new CompletedEvent(l->second, this->shared_from_this(), msg ) ) );
-		}	
-	}
-	else
-	{
-		_evt_queue->detach(fd);
-		const listener_map& lmap= _evt_queue->findListenerMap(
-			std::type_index(typeid(CloseEvent))
-		);
-
-		if(lmap.size() > 0 )
-		{
-			auto l=lmap.find(fd);
-			if( l!= lmap.end())
-				_evt_queue->pushEvent( event_ptr(
-					new CloseEvent(l->second, this->shared_from_this()) ));
-		}	
-
-		this->close();
+		if(rsize > 0 ){
+			std::cout<<"read size="<<rsize<<std::endl;
+			//todo notify completed data
+		}
+		else{
+			if(errno != EAGAIN && errno != EWOULDBLOCK){
+				std::cout<<"read failed fd="<<this->fd()<<std::endl;
+				this->onClose();
+			}
+			break;
+		}
 	}
 	
+}
+
+template<class EventQueueT, class MsgWrapper>
+void NetPeerBasic<EventQueueT,  MsgWrapper>::onClose()
+{
+	close();
+	//todo notify sock have closed
 }
 
 template<class EventQueueT, class MsgWrapper>
@@ -60,16 +50,21 @@ template<class EventQueueT, class MsgWrapper>
 int NetPeerBasic<EventQueueT,  MsgWrapper>::write(const void *buf, size_t len)
 {
 	size_t n=0;
-	do
-	{
-		int m = send(_fd, (const char*)buf+n, len-n, 0);
-		if(m < 0)
-		{
-			if(errno != EAGAIN && errno != EWOULDBLOCK )
+	do{
+		int m = send(this->fd(), (const char*)buf+n, len-n, 0);
+		if(m <= 0){
+			if(errno == EAGAIN || errno == EWOULDBLOCK ){
+				//todo post wait for output event alive.
+			}
+			else{
+				std::cout<<"write data error fd="<<this->fd()<<std::endl;
 				break;
+			}
 		}
-		else
+		else{
 			n += m;
+		}
+
 	}while( n < len );
 
 	return n;
@@ -78,10 +73,7 @@ int NetPeerBasic<EventQueueT,  MsgWrapper>::write(const void *buf, size_t len)
 template<class EventQueueT,  class MsgWrapper>
 void NetPeerBasic<EventQueueT,  MsgWrapper>::close()
 {
-	if(_fd != INVALID_SOCKET)
-	{
-		
-		this->template unlisten<Event>(this->template fd());
+	if(_fd != INVALID_SOCKET){
 		::close(_fd);
 	}
 }
