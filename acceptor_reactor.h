@@ -4,12 +4,11 @@
 #define ACCEPTOR_REACTOR_H
 
 #include "addr.h"
-#include "event_listener_basic.h"
-#include "pollevents.h"
+#include "acceptor_basic.h"
+#include "netevents.h"
 #include "namespdef.h"
 
 #include <functional>
-#include <typeindex>
 
 NAMESP_BEGIN
 namespace net
@@ -17,50 +16,45 @@ namespace net
 
 
 template<class EventQueueT>
-using PollInputListner = typename PollInputEvent<EventQueueT>::listener_t;
+using AcceptListener = typename NetAcceptEvent<EventQueueT>::listener_t;
 
-template<class EventQueueT, class AcceptorBasicT>
-class AcceptorReactor: public PollInputListner<EventQueueT>, public AcceptorBasicT
+///call back when accpet event was fired
+///@param fd the acceptable fd, that can call ::accept socket function on it 
+///later.
+using AcceptCb_r = std::function<void(fd_t fd)>;
+
+template<class EventQueueT>
+class AcceptorReactor: public AcceptListener<EventQueueT>
+		     , public AcceptorBasic<NetAcceptEvent<EventQueueT>, AcceptCb_r>
 { 
-	using Event = PollInputEvent<EventQueueT>;
-	using AcceptEvent = NetAcceptEvent<EventQueueT>;
 
+	using AcceptorBase=AcceptorBasic<NetAcceptEvent<EventQueueT>, AcceptCb_r>;
 public:
 	AcceptorReactor(EventQueueT* q, const AddrPair& local_addr)
-		:PollInputListner<EventQueueT>(q)
-		,AcceptorBasicT(q, local_addr)
+		:AcceptListener<EventQueueT>(q)
+		,AcceptorBase(local_addr)
 	{
-		this->template open();
-		this->template listen<Event>(this->template fd(), [this](fd_t fd){ this->onInput(fd); } );
-		
+		this->_evt.reset( new typename AcceptorBase::event_t() );
+		this->template listen(this->template fd(), this->_evt.get()
+				, [this](){ this->onInput(); } );
 	}
 
 	AcceptorReactor(EventQueueT* q, unsigned short port)
-		:PollInputListner<EventQueueT>(q)
-		,AcceptorBasicT(q, port)
+		:AcceptorReactor(q, AddrPair{port, ""})
 	{
-		this->template open();
-		this->template listen<Event>(this->template fd(), [this](fd_t fd){ this->onInput(fd); } );
 	}
 	
 	~AcceptorReactor(){
-		close();
+		this->template unlisten(this->template fd(), this->_evt.get());
 	}
 
-	void close(){
-		AcceptorBasicT::close();
-		this->template unlisten<Event>(this->template fd());
+private:
+	void onInput(){
+		if(this->_accept_cb != nullptr){
+			this->_accept_cb(this->template fd() );
+		}
 	}
 
-
-	void onInput(fd_t fd)
-	{
-		const listener_list& llist = AcceptorBasicT::_evt_queue->findListenerList(
-			std::type_index(typeid(AcceptEvent))
-		);
-		AcceptorBasicT::_evt_queue->pushEvent( event_ptr(new AcceptEvent(llist, this->template fd())) );
-	}
-	
 };
 
 }//net

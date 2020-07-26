@@ -7,8 +7,7 @@
 #include "fddef.h"
 #include "namespdef.h"
 
-#include <functional>
-#include <typeindex>
+#include <memory>
 
 NAMESP_BEGIN
 namespace net
@@ -16,33 +15,36 @@ namespace net
 
 
 
-template<class EventQueueT>
+template<class Event, class AcceptCb>
 class AcceptorBasic 
 { 
 public:
-	AcceptorBasic(EventQueueT* q, const AddrPair& local_addr)throw(sockexcpt)
+	AcceptorBasic(const AddrPair& local_addr)
 		:_local_addr(local_addr)
-		,_evt_queue(q)
 	{
+		open();
 	}
 
-	AcceptorBasic(EventQueueT* q, unsigned short port)throw(sockexcpt)
-		:_evt_queue(q)
+	AcceptorBasic(unsigned short port)
 	{
 		_local_addr.port = port;
+		open();
 	}
 
 	virtual ~AcceptorBasic(){
 		close();
 	}
 
+	void listenOnAccept(const AcceptCb& cb){ _accept_cb = cb; }
+
+	fd_t fd(){ return _fd; }
+
+private:
 	void close(){
 		::close(_fd);
 	}
 	
-	fd_t fd(){ return _fd; }
-
-	void open()throw(sockexcpt)
+	void open()
 	{
 		_fd = ::socket(AF_INET, SOCK_STREAM, 0);
 		if(_fd == -1 )
@@ -59,12 +61,15 @@ public:
 		::listen(_fd, 5);
 	}
 
+
 private:
 	fd_t _fd;
 	AddrPair _local_addr;
 
 protected:
-	EventQueueT* _evt_queue;
+	using event_t = Event;
+	std::unique_ptr<event_t> _evt;
+	AcceptCb _accept_cb;
 };
 
 }//net

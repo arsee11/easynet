@@ -5,72 +5,63 @@
 
 #include "addr.h"
 #include "netevents.h"
-#include "pollevents.h"
 #include "namespdef.h"
 
 #include <functional>
-#include <memory>
 
 NAMESP_BEGIN
 namespace net
 {
 
 template<class EventQueueT>
-using PollInputListner = typename PollInputEvent<EventQueueT>::listener_t;
+using CAcceptListener = typename NetAcceptEvent<EventQueueT>::listener_t;
+
+///call back when accpet event was fired
+///@param 1 netpeer ptr was accepted.
+template<class NetPeerPtr>
+using AcceptCb_c = std::function<void(NetPeerPtr)>;
 
 //@param EventQueueT
 //@param AcceptorBasicT 
 //@param NetPeer
-template<class EventQueueT, class AcceptorBasicT
+template<class EventQueueT
 	,class NetPeer, class NetPeerPtr
 >
-class AcceptorCompleted: public PollInputListner<EventQueueT>, public AcceptorBasicT
+class AcceptorCompleted: public CAcceptListener<EventQueueT>
+		       , public AcceptorBasic<NetAcceptEvent<EventQueueT>
+				             ,AcceptCb_c<NetPeerPtr>>
 { 
-	using Event = PollInputEvent<EventQueueT>;
-	using AcceptEvent = AcceptCompletedEvent<EventQueueT, NetPeerPtr>;
-
+	using AcceptorBase=AcceptorBasic<NetAcceptEvent<EventQueueT>
+				        ,AcceptCb_c<NetPeerPtr>>;
 public:
 	AcceptorCompleted(EventQueueT* q, const AddrPair& local_addr)
-		:PollInputListner<EventQueueT>(q)
-		,AcceptorBasicT(q, local_addr)
+		:CAcceptListener<EventQueueT>(q)
+		,AcceptorBase(local_addr)
 	{
-		this->template open();
-		this->template listen<Event>(this->template fd(), [this](fd_t fd){ this->onAccept(fd); } );
+		this->_evt.reset( new typename AcceptorBase::event_t() );
+		this->template listen(this->template fd(), this->_evt.get(),
+				[this](){ this->onInput();});
 	}
 
 	AcceptorCompleted(EventQueueT* q, unsigned short port)
-		:PollInputListner<EventQueueT>(q)
-		,AcceptorBasicT(q, port)
+		:AcceptorCompleted(q, AddrPair{port, ""})
 	{
-		this->template open();
-		this->template listen<Event>(this->template fd(), [this](fd_t fd){ this->onAccept(fd); } );
 	}
 
 	~AcceptorCompleted(){
-		close();
-	}
-
-	void close(){
-		AcceptorBasicT::close();
-		this->template unlisten<Event>(this->template fd());
+		this->template unlisten(this->template fd(), this->_evt.get());
 	}
 
 private:
-	void onAccept(fd_t fd){
+	void onInput(){
 		sockaddr_in addr;
 		socklen_t len = sizeof(addr);	
-		fd_t newfd = ::accept(fd, (sockaddr*)&addr, &len);
-		AcceptorBasicT::_evt_queue->attach(newfd);
-		NetPeerPtr peer( new NetPeer(AcceptorBasicT::_evt_queue, newfd, makeAddrPair(&addr)) );
-		if(AcceptorBasicT::_evt_queue != nullptr)
-		{
-			const listener_list& llist = AcceptorBasicT::_evt_queue->findListenerList(
-				std::type_index(typeid(AcceptEvent))
-			);
-			AcceptorBasicT::_evt_queue->pushEvent(std::make_shared<AcceptEvent>(llist, peer));
+		fd_t newfd = ::accept(this->template fd(), (sockaddr*)&addr, &len);
+		NetPeerPtr peer( new NetPeer(this->_evt_queue, newfd, makeAddrPair(&addr)) );
+		if(this->_accept_cb != nullptr){
+			this->_accept_cb(peer);
 		}
 	}
-
 };
 
 }//net

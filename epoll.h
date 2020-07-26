@@ -7,8 +7,9 @@
 #include <fcntl.h>
 #include <exception>
 #include <unordered_map>
+#include "event.h"
+#include <vector>
 
-#include "pollevents.h"
 #include "namespdef.h"
 
 
@@ -17,22 +18,33 @@ namespace net
 {
 
 
-template<class EventQueue>
+template<class EventT>
 class Epoll
 {
 	static constexpr int _max = 2048;
+
+	struct EventTSource{
+		EventT* ievt=nullptr;
+		EventT* oevt=nullptr;
+		EventT* cevt=nullptr;	
+	};
+
+	using event_list = std::vector<EventT*>;
 public:
-	Epoll(EventQueue* q):_evt_queue(q){
+	Epoll(){
 		init();
 	}
 
-	bool attach(fd_t fd);
+	bool addInput(fd_t fd, EventT* evt );
+	bool addOutput(fd_t fd, EventT* evt );
+	bool addClose(fd_t fd, EventT* evt );
+
 	void detach(fd_t fd){
 		if( epoll_ctl(_efd, EPOLL_CTL_DEL, fd, NULL) == -1)
 			perror("epoll_ctl");
 	}
 
-        void select();
+        event_list select();
 
 	void postSend(fd_t fd){
 		epoll_event tmp;
@@ -59,13 +71,8 @@ private:
 			throw std::exception();
 		}
 	}
-
-	template<class Event>
-	void postEvent(fd_t fd);
-
 private:
 	int _efd;
-	EventQueue* _evt_queue=nullptr;
 };
 
 }//namespace net

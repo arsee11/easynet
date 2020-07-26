@@ -2,7 +2,6 @@
 //
 #ifndef EVENT_LISTENER_BASIC_H
 #define EVENT_LISTENER_BASIC_H
-
 #include <typeindex>
 #include "event_listener.h"
 #include <list>
@@ -29,39 +28,28 @@ public:
 public:
 	EventListenerBasic(EventQueue* eq):_evt_queue(eq){} 
 	
-	template<class E>
-	void listen(const EventHandler& h){
-		assert(_evt_queue);
-		_evt_queue->bind(std::type_index(typeid(E) ), this);
-		_evt_handler = h;
-	}
-
-	template<class E>
-	void unlisten(){
-		assert(_evt_queue);
-		_evt_queue->unbind(std::type_index(typeid(E)), this);
-	}
-
 	///@template param E the event
 	///@param fd Event fd (id of events)
 	template<class E>
-	void listen(fd_t fd, const EventHandler& h){
+	void listen(fd_t fd, E* evt, const EventHandler& h){
 		assert(_evt_queue);
-		_evt_queue->bindfd(std::type_index(typeid(E) ), fd, this);
+		evt->addListener(this);
+		_evt_queue->bind(fd, evt);
 		_evt_handler = h;
 	}
 
 	template<class E>
-	void unlisten(fd_t fd){
+	void unlisten(fd_t fd, E* evt){
 		assert(_evt_queue);
-		_evt_queue->unbindfd(std::type_index(typeid(E) ), fd);
+		evt->delListener(this);
+		_evt_queue->unbind(fd);
 	}
 
 	void operator()(Params... params)const{
 		_evt_handler(params...);	
 	}	
 
-private:
+protected:
 	EventQueue* _evt_queue=nullptr;
 	EventHandler _evt_handler;
 
