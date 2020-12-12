@@ -7,12 +7,13 @@
 
 #include "epoll.h"
 #include "event_queue.h"
+#include "event.h"
 
 NAMESP_BEGIN
 namespace net
 {
 
-using EventQueueEpoll = EventQueue<Epoll>;
+using EventQueueEpoll = EventQueue<Epoll<Event>>;
 
 }//net
 NAMESP_END

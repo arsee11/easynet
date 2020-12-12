@@ -1,6 +1,6 @@
 //acceptor_completed_test.cpp
 
-#include "../acceptor.h"
+#include "acceptor.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -12,7 +12,7 @@ using namespace std::placeholders;
 struct MySession 
 {
 
-	void onAccept(const netpeer_ptr& peer)
+	void onAccept(netpeer_ptr peer)
 	{
 		_peer = peer;
 		cout<<"onAccept["

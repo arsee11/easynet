@@ -7,15 +7,12 @@
 
 #include <memory>
 #include <iostream>
-#include "event.h"
 
 NAMESP_BEGIN
 namespace net
 {
 
-template<
-	template<class>class Poller
->
+template<class Poller>
 class EventQueue 
 { 
 public:
@@ -25,20 +22,24 @@ public:
 
 	~EventQueue()
 	{
-		std::cout<<"~NetEventQueueBasic()"<<std::endl;
 	}
 
-        void process();
+    void process();
 
-	void bind(fd_t fd, event_ptr e);
+	template<class Event>
+	void bind(fd_t fd, Event* e);
+
+	template<class Event>
+	void unbind(fd_t fd, Event* e);
 
 	void unbind(fd_t fd);
 
 private:
-	void process(event_ptr e){ e->fire(); }
+	template<class Event>
+	void process(Event* e){ e->fire(); }
 
 private:
-	Poller<Event> _poller;
+	Poller _poller;
 };
 
 }//net

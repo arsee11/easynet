@@ -6,9 +6,10 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <exception>
-#include <unordered_map>
 #include "event.h"
 #include <vector>
+#include <map>
+#include <memory>
 
 #include "namespdef.h"
 
@@ -17,52 +18,43 @@ NAMESP_BEGIN
 namespace net
 {
 
+struct EventSource{
+	Event* ievt=nullptr;
+	Event* oevt=nullptr;
+	Event* cevt=nullptr;	
+	int fd=-1;
+	int events=0;
+};
+
 
 template<class EventT>
 class Epoll
 {
 	static constexpr int _max = 2048;
-
-	struct EventTSource{
-		EventT* ievt=nullptr;
-		EventT* oevt=nullptr;
-		EventT* cevt=nullptr;	
-	};
-
 	using event_list = std::vector<EventT*>;
+	using evt_src_ptr=std::unique_ptr<EventSource>;
+
 public:
 	Epoll(){
 		init();
 	}
 
-	bool addInput(fd_t fd, EventT* evt );
-	bool addOutput(fd_t fd, EventT* evt );
-	bool addClose(fd_t fd, EventT* evt );
+	template<class Event>
+	bool addPollee(fd_t fd, Event* evt );
 
-	void detach(fd_t fd){
-		if( epoll_ctl(_efd, EPOLL_CTL_DEL, fd, NULL) == -1)
-			perror("epoll_ctl");
-	}
+	//delete @evt event attach to the fd
+	template<class Event>
+	bool delPollee(fd_t fd, Event* evt);
 
-        event_list select();
+	//delete all events attach to the fd
+	bool delPollee(fd_t fd);
 
-	void postSend(fd_t fd){
-		epoll_event tmp;
-		tmp.data.fd = fd;
-		tmp.events = EPOLLET|EPOLLOUT;
-		if( epoll_ctl(_efd, EPOLL_CTL_MOD, fd, &tmp)==-1 ) 
-			perror("epoll_ctl");
-	}
-
-	void postRecv(fd_t fd){
-		epoll_event tmp;
-		tmp.data.fd = fd;
-		tmp.events = EPOLLET|EPOLLIN;
-		if( epoll_ctl(_efd, EPOLL_CTL_MOD, fd, &tmp)==-1 ) 
-			perror("epoll_ctl");
-	}
+	//@return available events
+    event_list select();
 
 private:
+	bool add(fd_t fd, EventSource* evt );
+	bool modify(fd_t fd, EventSource* src);
 	void init(){
 		_efd = epoll_create(_max);
 		if( _efd == -1 )
@@ -71,8 +63,10 @@ private:
 			throw std::exception();
 		}
 	}
+
 private:
 	int _efd;
+	std::map<int, evt_src_ptr> _evt_srcs;
 };
 
 }//namespace net
@@ -80,4 +74,4 @@ NAMESP_END
 
 #include "epoll.inl"
 
- #endif /*EPOLL_H*/
+#endif /*EPOLL_H*/
