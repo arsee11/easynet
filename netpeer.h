@@ -6,7 +6,8 @@
 
 #include "addr.h"
 #include "fddef.h"
-#include "netevents.h"
+#include "event.h"
+#include "event_listener.h"
 
 #include <sys/socket.h>
 #include <memory>
@@ -20,10 +21,11 @@ class NetPeerBasic :
 {
 	using NetPeer = NetPeerBasic<EventQueueT, MsgWrapper>;
 	using netpeer_ptr = std::shared_ptr<NetPeer>;
-	using InputEvent = NetInputEvent<EventQueueT>;
-	using CloseEvent = NetCloseEvent<EventQueueT>;
-	using InputListener = typename InputEvent::listener_t;
-	using CloseListener = typename CloseEvent::listener_t;
+	using InputEvent = NetInputEvent;
+	using CloseEvent = NetCloseEvent;
+    using OutputEvent = NetOutputEvent;
+    using SendCb = std::function<void(int size, int err)>;
+    using RecvCb = std::function<void(const netpeer_ptr& peer, const MsgWrapper& buf)>;
 
 public:
 	NetPeerBasic()=delete;
@@ -31,39 +33,46 @@ public:
 	NetPeerBasic(EventQueueT* q, fd_t fd, const AddrPair& remote_addr)
 		:_remote_addr(remote_addr)
 		,_fd(fd)
-		,_evt_queue(q)
-		,_inl(q)
-		,_closel(q)
+        ,_listener(q)
 	{
-		_input_evt.reset(new InputEvent() );
-		_inl.listen(this->fd(), _input_evt.get(), [this](){this->onInput();});
-		_close_evt.reset(new CloseEvent() );
-		_closel.listen(this->fd(), _close_evt.get(), [this](){this->onClose();});
+		_input_evt.reset(new InputEvent([this](){this->onInput();}) );
+		_listener.listen(this->fd(), _input_evt.get());
+
+		_output_evt.reset(new OutputEvent(nullptr));
+
+		_close_evt.reset(new CloseEvent( [this](){this->onClose();}) );
+		_listener.listen(this->fd(), _close_evt.get());
 	}
 
 	~NetPeerBasic(){ close(); }
 
-	AddrPair remote_addr(){ return _remote_addr; }
 	
-	void close();
-	fd_t fd()const{ return _fd; }
+    void listenOnRecv(RecvCb call_back){ _recv_cb = call_back; }
 
 	int write(const MsgWrapper& msg);
+    void write_async(MsgWrapper& msg, SendCb cb);
+	int read(void *buf, int len);
+
+    void close();
+	AddrPair remote_addr(){ return _remote_addr; }
+	fd_t fd()const{ return _fd; }
+
 
 private:
 	void onInput();
 	void onClose();
-	int read(void *buf, int len);
-	int write(const void* buf, size_t len);
+    void onOutput(MsgWrapper buf, SendCb call_back);
+    int do_write(MsgWrapper& buf, SendCb call_back);
 
 private:
 	AddrPair _remote_addr;
 	fd_t _fd;
-	EventQueueT* _evt_queue=nullptr;
-	InputListener _inl;
-	CloseListener _closel;
+    EventListener<EventQueueT> _listener;
 	std::unique_ptr<InputEvent> _input_evt;
 	std::unique_ptr<CloseEvent> _close_evt;
+    std::unique_ptr<OutputEvent> _output_evt;
+    RecvCb _recv_cb;
+
 };
 
 }//net

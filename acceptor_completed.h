@@ -5,6 +5,7 @@
 
 #include "addr.h"
 #include "netevents.h"
+#include "event_listener.h"
 #include "namespdef.h"
 
 #include <functional>
@@ -13,8 +14,6 @@ NAMESP_BEGIN
 namespace net
 {
 
-template<class EventQueueT>
-using CAcceptListener = typename NetAcceptEvent<EventQueueT>::listener_t;
 
 ///call back when accpet event was fired
 ///@param 1 netpeer ptr was accepted.
@@ -22,25 +21,21 @@ template<class NetPeerPtr>
 using AcceptCb_c = std::function<void(NetPeerPtr)>;
 
 //@param EventQueueT
-//@param AcceptorBasicT 
 //@param NetPeer
 template<class EventQueueT
 	,class NetPeer, class NetPeerPtr
 >
-class AcceptorCompleted: public CAcceptListener<EventQueueT>
-		       , public AcceptorBasic<NetAcceptEvent<EventQueueT>
-				             ,AcceptCb_c<NetPeerPtr>>
+class AcceptorCompleted: public EventListener<EventQueueT>
+		,public AcceptorBasic<NetInputEvent, AcceptCb_c<NetPeerPtr>>
 { 
-	using AcceptorBase=AcceptorBasic<NetAcceptEvent<EventQueueT>
-				        ,AcceptCb_c<NetPeerPtr>>;
+	using AcceptorBase=AcceptorBasic<NetInputEvent, AcceptCb_c<NetPeerPtr>>;
 public:
 	AcceptorCompleted(EventQueueT* q, const AddrPair& local_addr)
-		:CAcceptListener<EventQueueT>(q)
+		:EventListener<EventQueueT>(q)
 		,AcceptorBase(local_addr)
 	{
-		this->_evt.reset( new typename AcceptorBase::event_t() );
-		this->template listen(this->template fd(), this->_evt.get(),
-				[this](){ this->onInput();});
+		this->_evt.reset( new typename AcceptorBase::event_t([this](){this->onInput();}) );
+		this->template listen(this->template fd(), this->_evt.get());
 	}
 
 	AcceptorCompleted(EventQueueT* q, unsigned short port)
@@ -49,7 +44,7 @@ public:
 	}
 
 	~AcceptorCompleted(){
-		this->template unlisten(this->template fd(), this->_evt.get());
+		this->template unlisten(this->template fd());
 	}
 
 private:
