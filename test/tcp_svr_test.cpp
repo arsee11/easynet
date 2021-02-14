@@ -16,14 +16,14 @@ struct MySession
 	{
 	}
 
-	void onAccept(netpeer_ptr peer)
+	void onAccept(netpeer_ptr4 peer)
 	{
 		cout<<"onAccept["<<peer->remote_addr().ip<<":"<<peer->remote_addr().port<<"]"<<endl;
 		peer->listenOnRecv(std::bind(&MySession::onInput, this, _1, _2));
 		_peers.push_back(peer);
 	}
 
-	void onInput(const netpeer_ptr& peer, const MsgSt& msg) 
+	void onInput(const netpeer_ptr4& peer, const MsgSt& msg) 
 	{
 		cout<<"onInput("<<peer->fd()
 			<<")["<<peer->remote_addr().ip<<":"<<peer->remote_addr().port<<"]"<<endl;
@@ -37,19 +37,19 @@ struct MySession
 		});
 	}
 
-	void onClose(const netpeer_ptr& peer)
+	void onClose(const netpeer_ptr4& peer)
 	{
 		cout<<"onClose["<<peer->remote_addr().ip<<":"<<peer->remote_addr().port<<"]"<<endl;
 		_peers.remove(peer);
 	}
 
-	std::list<netpeer_ptr> _peers;
+	std::list<netpeer_ptr4> _peers;
 };
 
 int main()
 {
 	EventQueueEpoll eq;
-	AcceptorC a(&eq, 10000);	
+	AcceptorC4 a(&eq, 10000);	
 	MySession s;
 	a.listenOnAccept(std::bind(&MySession::onAccept, &s, _1));
 

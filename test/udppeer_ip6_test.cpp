@@ -14,8 +14,7 @@ struct MySession
 
 	MySession(EventQueueEpoll* eq)
 	{
-		
-		_udp.reset( new UdpPeer4(eq, 10000));
+		_udp.reset( new UdpPeer6(eq, 10000));
 		_udp->open();
 		_udp->listenOnRecv([this](const AddrPair& addr, const MsgSt& m){
 				this->onInput(addr, m);});
@@ -33,7 +32,7 @@ struct MySession
 		_udp->sendTo(addr, msg);
 	}
 
-	std::unique_ptr<UdpPeer4> _udp;
+	std::unique_ptr<UdpPeer6> _udp;
 };
 
 int main()

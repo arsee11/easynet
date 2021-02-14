@@ -6,7 +6,7 @@
 
 #include "addr.h"
 #include "fddef.h"
-#include "event.h"
+#include "netevents.h"
 #include "event_listener.h"
 
 #include <sys/socket.h>
@@ -15,11 +15,11 @@
 NAMESP_BEGIN
 namespace net
 {
-template<class EventQueueT, class MsgWrapper>
+template<class Socket, class EventQueueT, class MsgWrapper>
 class NetPeerBasic : 
-	public std::enable_shared_from_this<NetPeerBasic<EventQueueT, MsgWrapper>> 
+	public std::enable_shared_from_this<NetPeerBasic<Socket, EventQueueT, MsgWrapper>> 
 {
-	using NetPeer = NetPeerBasic<EventQueueT, MsgWrapper>;
+	using NetPeer = NetPeerBasic<Socket, EventQueueT, MsgWrapper>;
 	using netpeer_ptr = std::shared_ptr<NetPeer>;
 	using InputEvent = NetInputEvent;
 	using CloseEvent = NetCloseEvent;
@@ -30,9 +30,8 @@ class NetPeerBasic :
 public:
 	NetPeerBasic()=delete;
 
-	NetPeerBasic(EventQueueT* q, fd_t fd, const AddrPair& remote_addr)
-		:_remote_addr(remote_addr)
-		,_fd(fd)
+	NetPeerBasic(EventQueueT* q, const Socket& socket)
+		:_socket(socket)
         ,_listener(q)
 	{
 		_input_evt.reset(new InputEvent([this](){this->onInput();}) );
@@ -51,11 +50,10 @@ public:
 
 	int write(const MsgWrapper& msg);
     void write_async(MsgWrapper& msg, SendCb cb);
-	int read(void *buf, int len);
 
     void close();
-	AddrPair remote_addr(){ return _remote_addr; }
-	fd_t fd()const{ return _fd; }
+	AddrPair remote_addr()const{ return _socket.remote_addr(); }
+	fd_t fd()const{ return _socket.fd(); }
 
 
 private:
@@ -65,8 +63,7 @@ private:
     int do_write(MsgWrapper& buf, SendCb call_back);
 
 private:
-	AddrPair _remote_addr;
-	fd_t _fd;
+    Socket _socket;
     EventListener<EventQueueT> _listener;
 	std::unique_ptr<InputEvent> _input_evt;
 	std::unique_ptr<CloseEvent> _close_evt;

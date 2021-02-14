@@ -6,7 +6,7 @@
 #define CONNECTOR_H
 
 #include "addr.h"
-#include "netpeer.h"
+#include "tcp_netpeer.h"
 
 #ifndef NAMESPDEF_H
 #include "namespdef.h"
@@ -16,41 +16,45 @@ NAMESP_BEGIN
 namespace net
 {
 
+//@param EventQueueT
+//@param NetPeer
+template<class Socket, class EventQueueT
+	,class NetPeer, class NetPeerPtr
+>
 class Connector
 {
 public:
-	Connector(uint16_t local_port){
-		_local_addr.ip = "";
-		_local_addr.port = local_port;
+        using netpeer_ptr = NetPeerPtr;
+
+public:
+	Connector(EventQueueT* q, uint16_t local_port)
+        :Connector(q, AddrPair{"", local_port})
+    {
 	}
 
-	Connector(const AddrPair& local_addr)
-		:_local_addr(local_addr)
-	{}
+	Connector(EventQueueT* q, const AddrPair& local_addr)
+        :_evt_queue(q)
+        ,_local_addr(local_addr)
+	{
+    }
 
-	virtual NetPeer* connect(const AddrPair& remote_addr)=0;
+	NetPeerPtr connect(const AddrPair& remote_addr){
+        Socket socket(_local_addr);
+        if( socket.connect(remote_addr) ){
+	        return NetPeerPtr( new NetPeer(_evt_queue, socket) );
+        }
+
+        return nullptr;
+    }
 
 protected:
-	AddrPair _local_addr;
+    EventQueueT* _evt_queue=nullptr;
+    AddrPair _local_addr;
 };
 
 
-
-/////////////////////////////////////////////////////////////
-class TCPConnector : public Connector
-{
-public:
-	TCPConnector(uint16_t local_port)
-		:Connector(local_port)
-	{
-	}
-
-	TCPConnector(const AddrPair& local_addr)
-		:Connector(local_addr)
-	{}
-
-	NetPeer* connect(const AddrPair& remot_addr)override;
-};
+using Connector4 =Connector<TcpSocket<IPv4>, EventQueueEpoll, NetPeer4, netpeer_ptr4>; 
+using Connector6 =Connector<TcpSocket<IPv6>, EventQueueEpoll, NetPeer6, netpeer_ptr6>; 
 
 }//net
 NAMESP_END

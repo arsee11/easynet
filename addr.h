@@ -60,8 +60,8 @@ private:
 
 struct AddrPair
 {
-	unsigned short 	port;
 	std::string 	ip;
+	unsigned short 	port;
 };
 
 inline bool operator==(const AddrPair& rhs, const AddrPair& lhs){
@@ -78,35 +78,76 @@ struct addr_hash_value
 	}
 };
 
-inline std::string getip(const sockaddr_in* addr){
-	char str[16] = {0};
-	return inet_ntop(AF_INET, (void*)&(addr->sin_addr), str, 16);
-}
 
-inline uint16_t getport(const sockaddr_in* addr){
-	return ntohs(addr->sin_port);
-}
 
-inline AddrPair makeAddrPair(const sockaddr_in* inaddr)
+
+////////////////////////////////////////////////////////////////////////////////////
+struct IPv4
 {
-	return AddrPair{getport(inaddr), getip(inaddr)};
-}
+    using addr_t = sockaddr_in;
 
-inline void makeSockaddr(const AddrPair& addr, sockaddr* saddr, socklen_t& nsaddr)
+    static constexpr int family=AF_INET;
+    static bool check_ip(const std::string& ip){ return true; }
+
+static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
 {
-	sockaddr_in inaddr;
-	::memset(&inaddr, 0, sizeof(inaddr));
-	inaddr.sin_family = AF_INET;
+	::memset(inaddr, 0, sizeof(addr_t));
+	inaddr->sin_family = family;
 	if(addr.ip.empty())
-		inaddr.sin_addr.s_addr = INADDR_ANY;
+		inaddr->sin_addr.s_addr = INADDR_ANY;
 	else
-		::inet_pton(AF_INET, addr.ip.c_str(), &(inaddr.sin_addr));
+		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin_addr));
 
-	inaddr.sin_port = htons(addr.port);
+	inaddr->sin_port = htons(addr.port);
 
-	nsaddr = sizeof inaddr;
-	::memcpy(saddr, &inaddr, nsaddr);
+	int nsaddr = sizeof(addr_t);
+    return nsaddr;
 }
+    
+static AddrPair makeAddrPair(const addr_t* inaddr)
+{
+	char str[16] = {0};
+	inet_ntop(family, (void*)&(inaddr->sin_addr), str, 16);
+	uint16_t port = ntohs(inaddr->sin_port);
+	return AddrPair{str, port};
+}
+
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+struct IPv6
+{
+    using addr_t = sockaddr_in6;
+
+    static constexpr int family=AF_INET6;
+    static bool check_ip(const std::string& ip){ return true; }
+
+static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
+{
+	::memset(inaddr, 0, sizeof(addr_t));
+	inaddr->sin6_family = family;
+	if(addr.ip.empty())
+		inaddr->sin6_addr = in6addr_any;
+	else
+		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin6_addr));
+
+	inaddr->sin6_port = htons(addr.port);
+
+	int nsaddr = sizeof(addr_t);
+    return nsaddr;
+}
+    
+static AddrPair makeAddrPair(const addr_t* inaddr)
+{
+	char str[64] = {0};
+	inet_ntop(family, (void*)&(inaddr->sin6_addr), str, 64);
+	uint16_t port = ntohs(inaddr->sin6_port);
+	return AddrPair{str, port};
+}
+
+};
 
 }//net
 NAMESP_END

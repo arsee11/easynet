@@ -1,7 +1,7 @@
 ﻿//epoll.inl
 
-#include <iostream>
-using namespace std;
+//#include <iostream>
+//using namespace std;
 
 NAMESP_BEGIN
 namespace net
@@ -86,6 +86,7 @@ template<class EventT>
 template<class Event>
 bool Epoll<EventT>::addPollee(fd_t fd, Event* evt )
 {
+	//cout<<"addPollee fd:"<<fd<<endl;
 	EventSource * esrc = nullptr;
 	const auto& it = _evt_srcs.find(fd);
 	if(it == _evt_srcs.end())
@@ -120,7 +121,7 @@ bool Epoll<EventT>::delPollee(fd_t fd, Event* evt )
 template<class EventT>
 bool Epoll<EventT>::delPollee(fd_t fd)
 {
-	cout<<"delPollee fd:"<<fd<<endl;
+	//cout<<"delPollee fd:"<<fd<<endl;
 	_evt_srcs.erase(fd);
 	if( epoll_ctl(_efd, EPOLL_CTL_DEL, fd, NULL) == -1)
 	{
@@ -137,7 +138,7 @@ bool Epoll<EventT>::add(fd_t fd, EventSource* src)
 	if( !setNoblocking(fd))
 		return false;
 
-	cout<<"add event fd:"<<fd<<" events:"<<src->events<<endl;
+	//cout<<"add event fd:"<<fd<<" events:"<<src->events<<endl;
 	epoll_event eh;
 	eh.events = EPOLLET|src->events;
 	eh.data.ptr = src;
@@ -153,7 +154,7 @@ bool Epoll<EventT>::add(fd_t fd, EventSource* src)
 template<class EventT>
 bool Epoll<EventT>::modify(fd_t fd, EventSource* src)
 {
-	cout<<"modify event fd:"<<fd<<" events:"<<src->events<<endl;
+	//cout<<"modify event fd:"<<fd<<" events:"<<src->events<<endl;
 	epoll_event tmp;
 	tmp.data.ptr = src;
 	tmp.events = EPOLLET|src->events;
@@ -170,7 +171,7 @@ typename Epoll<EventT>::event_list Epoll<EventT>::select()
 {
 	event_list events;
 	epoll_event ehs[_max];
-    int nfds = epoll_wait(_efd, ehs, _max, 1000);
+    int nfds = epoll_wait(_efd, ehs, _max, -1);
 	if(nfds == -1){
 		perror("epoll_wait");
 		return events; 
@@ -178,18 +179,18 @@ typename Epoll<EventT>::event_list Epoll<EventT>::select()
 
     for(int i=0; i<nfds; ++i){			
 		EventSource* esrc = static_cast<EventSource*>(ehs[i].data.ptr);
-		cout<<"select results fd:"<<esrc->fd<<" events:"<<ehs[i].events<<endl;
+		//cout<<"select results fd:"<<esrc->fd<<" events:"<<ehs[i].events<<endl;
 		if(ehs[i].events & EPOLLIN || ehs[i].events & EPOLLPRI){
 			events.push_back(esrc->ievt);
-			cout<<"select results push input\n";
+			//cout<<"select results push input\n";
 		}
 		if(ehs[i].events & EPOLLOUT ){
 			events.push_back(esrc->oevt);
-			cout<<"select results push output\n";
+			//cout<<"select results push output\n";
 		}
 		if(ehs[i].events & EPOLLRDHUP ){
 			events.push_back(esrc->cevt);
-			cout<<"select results push close\n";
+			//cout<<"select results push close\n";
 		}
 	}
 

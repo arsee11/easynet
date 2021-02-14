@@ -34,6 +34,9 @@ public:
 
 	void unbind(fd_t fd);
 
+    template<class Callback>
+    void bindInput(fd_t fd, Callback cb);
+
 private:
 	template<class Event>
 	void process(Event* e){ e->fire(); }
