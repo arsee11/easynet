@@ -1,7 +1,7 @@
 //acceptor_test.cpp
 
-#include "../acceptor.h"
-#include "../event_queue_epoll.h"
+#include "acceptor.h"
+#include "event_queue_epoll.h"
 #include <iostream>
 #include <stdio.h>
 

@@ -20,12 +20,12 @@ namespace net
 ///later.
 using AcceptCb_r = std::function<void(fd_t fd)>;
 
-template<class EventQueueT>
+template<class Socket, class EventQueueT>
 class AcceptorReactor: public EventListener<EventQueueT>
-		     , public AcceptorBasic<NetInputEvent, AcceptCb_r>
+		     , public AcceptorBasic<Socket, NetInputEvent, AcceptCb_r>
 { 
 
-	using AcceptorBase=AcceptorBasic<NetInputEvent, AcceptCb_r>;
+	using AcceptorBase=AcceptorBasic<Socket, NetInputEvent, AcceptCb_r>;
 public:
 	AcceptorReactor(EventQueueT* q, const AddrPair& local_addr)
 		:EventListener<EventQueueT>(q)
@@ -36,7 +36,7 @@ public:
 	}
 
 	AcceptorReactor(EventQueueT* q, unsigned short port)
-		:AcceptorReactor(q, AddrPair{port, ""})
+		:AcceptorReactor(q, AddrPair{"", port})
 	{
 	}
 	

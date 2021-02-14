@@ -9,41 +9,34 @@ NAMESP_BEGIN
 namespace net
 {
 
-template<class EventQueueT, class MsgWrapper>
-int NetPeerBasic<EventQueueT,  MsgWrapper>::write(const MsgWrapper& msg)
+template<class Socket, class EventQueueT, class MsgWrapper>
+int NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::write(const MsgWrapper& msg)
 {
-	return write(msg.begin(), msg.size());
+	return _socket.send(msg.rd_ptr(), msg.size());
 }
 
-template<class EventQueueT, class MsgWrapper>
-void NetPeerBasic<EventQueueT, MsgWrapper>::write_async(MsgWrapper& buf, SendCb call_back)
+template<class Socket, class EventQueueT, class MsgWrapper>
+void NetPeerBasic<Socket, EventQueueT, MsgWrapper>::write_async(MsgWrapper& buf, SendCb call_back)
 {
    do_write(buf, call_back);
 }
 
-template<class EventQueueT,  class MsgWrapper>
-int NetPeerBasic<EventQueueT,  MsgWrapper>::read(void *buf, int len)
+template<class Socket, class EventQueueT, class MsgWrapper>
+void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::close()
 {
-	return ::recv(_fd, buf, len, 0);
-}
-
-template<class EventQueueT,  class MsgWrapper>
-void NetPeerBasic<EventQueueT,  MsgWrapper>::close()
-{
-	if(_fd != INVALID_SOCKET){
-        _listener.unlisten(_fd);
-		::close(_fd);
-		_fd = INVALID_SOCKET;
+	if(!_socket.invalid()){
+        _listener.unlisten(_socket.fd());
+		_socket.close();
 	}
 }
 
-template<class EventQueueT, class MsgWrapper>
-void NetPeerBasic<EventQueueT,  MsgWrapper>::onInput()
+template<class Socket, class EventQueueT, class MsgWrapper>
+void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::onInput()
 {
     //read until all availabe datas have recv
     while(true){
         MsgWrapper msg(10240);
-        int rsize=read(msg.wr_ptr(), msg.capicity());
+        int rsize=_socket.recv(msg.wr_ptr(), msg.capicity());
         msg.size(rsize);
 
         if(rsize > 0 ){
@@ -67,18 +60,18 @@ void NetPeerBasic<EventQueueT,  MsgWrapper>::onInput()
 
 }
 
-template<class EventQueueT, class MsgWrapper>
-void NetPeerBasic<EventQueueT,  MsgWrapper>::onClose()
+template<class Socket, class EventQueueT, class MsgWrapper>
+void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::onClose()
 {
    	std::cout<<"onClose fd="<<this->fd()<<std::endl;
 	close();
     //todo notify sock have closed
 }
 
-template<class EventQueueT, class MsgWrapper>
-int NetPeerBasic<EventQueueT,  MsgWrapper>::do_write(MsgWrapper& buf, SendCb call_back)
+template<class Socket, class EventQueueT, class MsgWrapper>
+int NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::do_write(MsgWrapper& buf, SendCb call_back)
 {
-    int ret = ::send(this->fd(), buf.rd_ptr(), buf.size(), 0);
+    int ret = _socket.send(buf.rd_ptr(), buf.size());
     if(ret <=0 && errno != EAGAIN && errno != EWOULDBLOCK ){
         call_back( 0, ret);
         return 0;
@@ -95,8 +88,8 @@ int NetPeerBasic<EventQueueT,  MsgWrapper>::do_write(MsgWrapper& buf, SendCb cal
     return ret;
 }
 
-template<class EventQueueT, class MsgWrapper>
-void NetPeerBasic<EventQueueT,  MsgWrapper>:: onOutput(MsgWrapper buf, SendCb call_back){
+template<class Socket, class EventQueueT, class MsgWrapper>
+void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>:: onOutput(MsgWrapper buf, SendCb call_back){
     int ret = do_write(buf, call_back);
     if(ret == buf.size()){
         _listener.unlisten(this->fd(), _output_evt.get());

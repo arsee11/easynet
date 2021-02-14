@@ -12,24 +12,27 @@ NAMESP_BEGIN
 namespace net
 {
 
-template<class EventQueueT, class MsgWrapper>
-class UdpPeerBasic 
+template<class Socket, class EventQueueT, class MsgWrapper>
+class UdpPeerBasic :public EventListener<EventQueueT>
 {
 	using OnRecvCb = std::function<void(const AddrPair& local_addr, const MsgWrapper& msg)>;
 
-	using InputEvent = NetInputEvent<EventQueueT>;
-	using InputListner = typename InputEvent::listener_t;
+	using InputEvent = NetInputEvent;
 
 public:
 	UdpPeerBasic(EventQueueT* q, const AddrPair& local_addr)
-		:_local_addr(local_addr)
-		,_listener(q)
+		:EventListener<EventQueueT>(q)
+		,_socket(local_addr)
 	{
 	}
 
 	UdpPeerBasic(EventQueueT* q, unsigned short local_port)
-		:UdpPeerBasic(q, AddrPair{local_port, ""})
+		:UdpPeerBasic(q, AddrPair{"", local_port} )
 	{
+	}
+
+	~UdpPeerBasic(){
+		this->template unlisten(this->fd());
 	}
 
 	void open();
@@ -38,7 +41,7 @@ public:
 
 	void sendTo(const AddrPair& remote, const MsgWrapper& msg);
 
-	fd_t fd(){ return _fd; }
+	fd_t fd()const { return _socket.fd(); }
 	
 	void listenOnRecv(const OnRecvCb& cb){ _onrecv_cb=cb; }
 
@@ -46,10 +49,8 @@ private:
 	void onInput();
 
 private:
-	fd_t _fd;
-	AddrPair _local_addr;
+    Socket _socket;
 	std::unique_ptr<InputEvent> _evt;
-	InputListner _listener; 
 	OnRecvCb _onrecv_cb;
 
 };

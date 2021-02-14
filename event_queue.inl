@@ -27,6 +27,14 @@ void EventQueue<Poller>::unbind(fd_t fd)
 }
 
 template<class Poller>
+template<class Callback>
+void EventQueue<Poller>::bindInput(fd_t fd, Callback cb)
+{
+    auto e = new NetInputEvent(cb);
+	_poller.addPollee(fd, e);
+}
+
+template<class Poller>
 void EventQueue<Poller>::process()
 {
 	auto events = _poller.select();

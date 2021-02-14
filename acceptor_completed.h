@@ -22,13 +22,13 @@ using AcceptCb_c = std::function<void(NetPeerPtr)>;
 
 //@param EventQueueT
 //@param NetPeer
-template<class EventQueueT
+template<class Socket, class EventQueueT
 	,class NetPeer, class NetPeerPtr
 >
 class AcceptorCompleted: public EventListener<EventQueueT>
-		,public AcceptorBasic<NetInputEvent, AcceptCb_c<NetPeerPtr>>
+		,public AcceptorBasic<Socket, NetInputEvent, AcceptCb_c<NetPeerPtr>>
 { 
-	using AcceptorBase=AcceptorBasic<NetInputEvent, AcceptCb_c<NetPeerPtr>>;
+	using AcceptorBase=AcceptorBasic<Socket, NetInputEvent, AcceptCb_c<NetPeerPtr>>;
 public:
 	AcceptorCompleted(EventQueueT* q, const AddrPair& local_addr)
 		:EventListener<EventQueueT>(q)
@@ -39,7 +39,7 @@ public:
 	}
 
 	AcceptorCompleted(EventQueueT* q, unsigned short port)
-		:AcceptorCompleted(q, AddrPair{port, ""})
+		:AcceptorCompleted(q, AddrPair{"", port})
 	{
 	}
 
@@ -49,10 +49,12 @@ public:
 
 private:
 	void onInput(){
-		sockaddr_in addr;
-		socklen_t len = sizeof(addr);	
-		fd_t newfd = ::accept(this->template fd(), (sockaddr*)&addr, &len);
-		NetPeerPtr peer( new NetPeer(this->_evt_queue, newfd, makeAddrPair(&addr)) );
+		Socket cli = this->_socket.accept();
+        if(cli.invalid()){
+            //log 
+            return;
+        }
+		NetPeerPtr peer( new NetPeer(this->_evt_queue, cli) );
 		if(this->_accept_cb != nullptr){
 			this->_accept_cb(peer);
 		}
