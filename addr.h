@@ -30,6 +30,7 @@
 #endif
 
 #include <string.h>
+#include "fddef.h"
 
 
 NAMESP_BEGIN
@@ -89,29 +90,36 @@ struct IPv4
     static constexpr int family=AF_INET;
     static bool check_ip(const std::string& ip){ return true; }
 
-static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
-{
-	::memset(inaddr, 0, sizeof(addr_t));
-	inaddr->sin_family = family;
-	if(addr.ip.empty())
-		inaddr->sin_addr.s_addr = INADDR_ANY;
-	else
-		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin_addr));
-
-	inaddr->sin_port = htons(addr.port);
-
-	int nsaddr = sizeof(addr_t);
-    return nsaddr;
-}
+    static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
+    {
+    	::memset(inaddr, 0, sizeof(addr_t));
+    	inaddr->sin_family = family;
+    	if(addr.ip.empty())
+    		inaddr->sin_addr.s_addr = INADDR_ANY;
+    	else
+    		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin_addr));
     
-static AddrPair makeAddrPair(const addr_t* inaddr)
-{
-	char str[16] = {0};
-	inet_ntop(family, (void*)&(inaddr->sin_addr), str, 16);
-	uint16_t port = ntohs(inaddr->sin_port);
-	return AddrPair{str, port};
-}
+    	inaddr->sin_port = htons(addr.port);
+    
+    	int nsaddr = sizeof(addr_t);
+        return nsaddr;
+    }
+        
+    static AddrPair makeAddrPair(const addr_t* inaddr)
+    {
+    	char str[16] = {0};
+    	inet_ntop(family, (void*)&(inaddr->sin_addr), str, 16);
+    	uint16_t port = ntohs(inaddr->sin_port);
+    	return AddrPair{str, port};
+    }
 
+    static AddrPair getBindAddr(fd_t fd)
+    {
+        addr_t addr;
+        socklen_t len = sizeof(addr);
+        getsockname(fd, (sockaddr*)&addr, &len);
+        return makeAddrPair(&addr);
+    }
 };
 
 
@@ -124,29 +132,36 @@ struct IPv6
     static constexpr int family=AF_INET6;
     static bool check_ip(const std::string& ip){ return true; }
 
-static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
-{
-	::memset(inaddr, 0, sizeof(addr_t));
-	inaddr->sin6_family = family;
-	if(addr.ip.empty())
-		inaddr->sin6_addr = in6addr_any;
-	else
-		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin6_addr));
-
-	inaddr->sin6_port = htons(addr.port);
-
-	int nsaddr = sizeof(addr_t);
-    return nsaddr;
-}
+    static int makeSockaddr(const AddrPair& addr, addr_t* inaddr)
+    {
+    	::memset(inaddr, 0, sizeof(addr_t));
+    	inaddr->sin6_family = family;
+    	if(addr.ip.empty())
+    		inaddr->sin6_addr = in6addr_any;
+    	else
+    		::inet_pton(family, addr.ip.c_str(), &(inaddr->sin6_addr));
     
-static AddrPair makeAddrPair(const addr_t* inaddr)
-{
-	char str[64] = {0};
-	inet_ntop(family, (void*)&(inaddr->sin6_addr), str, 64);
-	uint16_t port = ntohs(inaddr->sin6_port);
-	return AddrPair{str, port};
-}
+    	inaddr->sin6_port = htons(addr.port);
+    
+    	int nsaddr = sizeof(addr_t);
+        return nsaddr;
+    }
+        
+    static AddrPair makeAddrPair(const addr_t* inaddr)
+    {
+    	char str[64] = {0};
+    	inet_ntop(family, (void*)&(inaddr->sin6_addr), str, 64);
+    	uint16_t port = ntohs(inaddr->sin6_port);
+    	return AddrPair{str, port};
+    }
 
+    static AddrPair getBindAddr(fd_t fd)
+    {
+        addr_t addr;
+        socklen_t len = sizeof(addr);
+        getsockname(fd, (sockaddr*)&addr, &len);
+        return makeAddrPair(&addr);
+    }
 };
 
 }//net

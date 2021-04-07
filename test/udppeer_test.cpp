@@ -9,13 +9,14 @@ using namespace arsee::net;
 using namespace std;
 using namespace std::placeholders;
 
+std::string ip;
 struct MySession
 {
 
 	MySession(EventQueueEpoll* eq)
 	{
 		
-		_udp.reset( new UdpPeer4(eq, 10000));
+		_udp.reset( new UdpPeer4(eq, AddrPair{ip, 10000}));
 		_udp->open();
 		_udp->listenOnRecv([this](const AddrPair& addr, const MsgSt& m){
 				this->onInput(addr, m);});
@@ -36,8 +37,9 @@ struct MySession
 	std::unique_ptr<UdpPeer4> _udp;
 };
 
-int main()
+int main(int argc, char** argv)
 {
+    ip = argv[1];
 	EventQueueEpoll eq;
 	MySession s(&eq);
 

@@ -30,11 +30,13 @@ public:
 	
         typename IPv::addr_t saddr;
         int addr_size = IPv::makeSockaddr(addr, &saddr);
-            if (bind(_fd, (sockaddr*)&saddr, (socklen_t)addr_size) == SOCKET_ERROR){
+        if (bind(_fd, (sockaddr*)&saddr, (socklen_t)addr_size) == SOCKET_ERROR){
 		    perror("bind");
             ::close(_fd);
             _fd = INVALID_SOCKET;
 	    }
+
+        _local_addr = IPv::getBindAddr(_fd);
     }
 
     Socket(int fd, const AddrPair& local_addr, const AddrPair& remote_addr)
@@ -52,6 +54,7 @@ public:
     bool invalid(){ return _fd==INVALID_SOCKET; }
     fd_t fd()const{ return _fd; }
     AddrPair remote_addr()const{ return _remote_addr; }
+    AddrPair local_addr()const{ return _local_addr; }
 
 protected:
     fd_t _fd=INVALID_SOCKET;
@@ -153,7 +156,6 @@ public:
 
     int sendto(const void* buf, int len, const AddrPair& addr){
         typename IPv::addr_t inaddr;
-	    socklen_t addrlen = sizeof inaddr;
         IPv::makeSockaddr(addr, &inaddr);
 	    int ret = ::sendto(this->_fd, buf, len, 0, (sockaddr*)&inaddr, sizeof(inaddr));
         return ret;
