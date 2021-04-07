@@ -171,7 +171,7 @@ typename Epoll<EventT>::event_list Epoll<EventT>::select()
 {
 	event_list events;
 	epoll_event ehs[_max];
-    int nfds = epoll_wait(_efd, ehs, _max, -1);
+    int nfds = epoll_wait(_efd, ehs, _max, 500);
 	if(nfds == -1){
 		perror("epoll_wait");
 		return events; 
