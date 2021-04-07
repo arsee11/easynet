@@ -42,6 +42,7 @@ public:
 	void sendTo(const AddrPair& remote, const MsgWrapper& msg);
 
 	fd_t fd()const { return _socket.fd(); }
+	AddrPair local_addr()const{ return _socket.local_addr(); }
 	
 	void listenOnRecv(const OnRecvCb& cb){ _onrecv_cb=cb; }
 
