@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "namespdef.h"
+#include "fddef.h"
 
 
 NAMESP_BEGIN

@@ -24,11 +24,11 @@ template<class Socket, class EventQueueT
 class Connector
 {
 public:
-        using netpeer_ptr = NetPeerPtr;
+    using netpeer_ptr = NetPeerPtr;
 
 public:
-	Connector(EventQueueT* q, uint16_t local_port)
-        :Connector(q, AddrPair{"", local_port})
+    Connector(EventQueueT* q, uint16_t local_port)
+    :Connector(q, AddrPair{"", local_port})
     {
 	}
 
@@ -38,10 +38,12 @@ public:
 	{
     }
 
-	NetPeerPtr connect(const AddrPair& remote_addr){
+    NetPeerPtr connect(const AddrPair& remote_addr){
         Socket socket(_local_addr);
-        if( socket.connect(remote_addr) ){
-	        return NetPeerPtr( new NetPeer(_evt_queue, socket) );
+        if(socket.bind()){
+            if( socket.connect(remote_addr) ){
+                return NetPeerPtr( new NetPeer(_evt_queue, socket) );
+            }
         }
 
         return nullptr;

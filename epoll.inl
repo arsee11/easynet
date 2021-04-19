@@ -3,6 +3,8 @@
 //#include <iostream>
 //using namespace std;
 
+#include "netevents.h"
+
 NAMESP_BEGIN
 namespace net
 {

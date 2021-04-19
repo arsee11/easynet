@@ -12,7 +12,7 @@ namespace net
 template<class Socket, class EventQueueT, class MsgWrapper>
 int NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::write(const MsgWrapper& msg)
 {
-	return _socket.send(msg.rd_ptr(), msg.size());
+    return _socket.send(msg.rd_ptr(), msg.size());
 }
 
 template<class Socket, class EventQueueT, class MsgWrapper>
@@ -24,10 +24,10 @@ void NetPeerBasic<Socket, EventQueueT, MsgWrapper>::write_async(MsgWrapper& buf,
 template<class Socket, class EventQueueT, class MsgWrapper>
 void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::close()
 {
-	if(!_socket.invalid()){
+    if(!_socket.invalid()){
         _listener.unlisten(_socket.fd());
-		_socket.close();
-	}
+        _socket.close();
+    }
 }
 
 template<class Socket, class EventQueueT, class MsgWrapper>
@@ -40,32 +40,33 @@ void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::onInput()
         msg.size(rsize);
 
         if(rsize > 0 ){
-        	std::cout<<"read size="<<rsize<<std::endl;
-        	if(_recv_cb != nullptr){
-        	    _recv_cb(this->shared_from_this(), msg);
-        	}
-        	if(rsize < msg.capicity()) //all availabel datas have recv
-        	{
-        	    break;
-        	}
+            std::cout<<"read size="<<rsize<<std::endl;
+            if(_recv_cb != nullptr){
+                _recv_cb(this->shared_from_this(), msg);
+            }
+            if(rsize < msg.capicity()) //all availabel datas have recv
+            {
+                break;
+            }
         }
         else{ // no datas to read
-        	if(errno != EAGAIN && errno != EWOULDBLOCK){
-        		std::cout<<"read failed fd="<<this->fd()<<std::endl;
-        		this->onClose();
-        	}
-        	break;
+            if(errno != EAGAIN && errno != EWOULDBLOCK){
+                std::cout<<"read failed fd="<<this->fd()<<std::endl;
+                this->onClose();
+            }
+            break;
         }
     }
-
 }
 
 template<class Socket, class EventQueueT, class MsgWrapper>
 void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::onClose()
 {
-   	std::cout<<"onClose fd="<<this->fd()<<std::endl;
-	close();
-    //todo notify sock have closed
+    std::cout<<"onClose fd="<<this->fd()<<std::endl;
+    close();
+    if(_close_cb != nullptr){
+        _close_cb(this->shared_from_this());
+    }
 }
 
 template<class Socket, class EventQueueT, class MsgWrapper>

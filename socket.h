@@ -27,16 +27,6 @@ public:
 		    perror("sock");
 		    return ;
 	    }
-	
-        typename IPv::addr_t saddr;
-        int addr_size = IPv::makeSockaddr(addr, &saddr);
-        if (bind(_fd, (sockaddr*)&saddr, (socklen_t)addr_size) == SOCKET_ERROR){
-		    perror("bind");
-            ::close(_fd);
-            _fd = INVALID_SOCKET;
-	    }
-
-        _local_addr = IPv::getBindAddr(_fd);
     }
 
     Socket(int fd, const AddrPair& local_addr, const AddrPair& remote_addr)
@@ -45,6 +35,25 @@ public:
         ,_remote_addr(remote_addr)
     {
     }
+
+	bool bind(){
+        typename IPv::addr_t saddr;
+        int addr_size = IPv::makeSockaddr(_local_addr, &saddr);
+        if (::bind(_fd, (sockaddr*)&saddr, (socklen_t)addr_size) == SOCKET_ERROR){
+		    perror("bind");
+            ::close(_fd);
+            _fd = INVALID_SOCKET;
+			return false;
+	    }
+
+        _local_addr = IPv::getBindAddr(_fd);
+		return true;
+	}
+
+	template<typename Opt>
+	bool setOption(Opt opt){
+		return opt.apply(_fd);
+	}
 
     void close(){
         ::close(_fd);

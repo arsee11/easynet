@@ -4,6 +4,8 @@
 #define EVENT_LISTENER_H
 #include <assert.h>
 
+#include "fddef.h"
+
 NAMESP_BEGIN
 namespace net
 {

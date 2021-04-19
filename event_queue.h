@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <iostream>
+#include "fddef.h"
 
 NAMESP_BEGIN
 namespace net
