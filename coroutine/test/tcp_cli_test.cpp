@@ -1,12 +1,10 @@
-//udp_test.cpp
+//tcp_cli_test.cpp
 
-#include "udppeer_co.h"
+#include "connector_co.h"
 #include <iostream>
 
 using namespace arsee::net;
 using namespace std;
-
-using UdpPeer = UdpPeer_co4;
 
 struct CoTask{
   struct promise_type {
@@ -19,16 +17,15 @@ struct CoTask{
 };
 
 
-CoTask loop(UdpPeer& udp)
+CoTask loop(Connector_co4::peer_t& tcp)
 {
     cout<<"enter loop coroutine\n";
     while(true){
-       AddrPair remote;
-       cout<<"call asnyc_read\n";
-       auto msg = co_await udp.async_read(remote);
-       cout<<"read from["<<remote.ip<<","<<remote.port<<"] size["<<msg.size()<<"]"<<endl;
-       int w = co_await udp.async_write(remote, msg);
-       cout<<"write to["<<remote.ip<<","<<remote.port<<"] size["<<msg.size()<<"]"<<endl;
+       MsgSt msg("hello", 6);
+       int w = co_await tcp.async_write(msg);
+       cout<<"write size["<<msg.size()<<"]"<<endl;
+       auto msgr = co_await tcp.async_read();
+       cout<<"read size["<<msgr.size()<<"]"<<endl;
     }
     cout<<"leave loop coroutine\n";
 }
@@ -39,13 +36,16 @@ int main(int argc, char** argv)
     int port=10010;
 
     EventQueueEpoll eq;
-    UdpPeer udp(&eq, port);
+    Connector_co4 c(&eq, 0);
+    auto peer = c.connect({"127.0.0.1", 10010});
+    if(!peer.is_valid() ){
+        return 1;
+    }
 
-    
-    loop(udp);
-    //co_spawn(loop(udp));
+    loop(peer);
+    //co_spawn(loop(tcp));
     //CoExeScope scope;
-    //co_spawn(scope, loop(udp));
+    //co_spawn(scope, loop(tcp));
 
     cout<<"after loop\n";
     while(true){
