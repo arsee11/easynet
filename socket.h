@@ -120,7 +120,7 @@ public:
 		socklen_t len = sizeof(addr);	
 		fd_t newfd = ::accept(this->_fd, (sockaddr*)&addr, &len);
         AddrPair remote_addr = IPv::makeAddrPair(&addr);
-        return TcpSocket(newfd, this->_local_addr, this->_remote_addr);
+        return TcpSocket(newfd, this->_local_addr, remote_addr);
     }
 
     int send(const void* buf, int size){

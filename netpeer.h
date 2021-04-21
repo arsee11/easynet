@@ -15,6 +15,7 @@
 NAMESP_BEGIN
 namespace net
 {
+
 template<class Socket, class EventQueueT, class MsgWrapper>
 class NetPeerBasic : 
 	public std::enable_shared_from_this<NetPeerBasic<Socket, EventQueueT, MsgWrapper>> 
@@ -53,8 +54,9 @@ public:
     void write_async(MsgWrapper& msg, SendCb cb);
     void close();
 
-    AddrPair remote_addr()const{ return _socket.remote_addr(); }
-    fd_t fd()const{ return _socket.fd(); }
+	AddrPair remote_addr()const{ return _socket.remote_addr(); }
+	AddrPair local_addr()const{ return _socket.local_addr(); }
+	fd_t fd()const{ return _socket.fd(); }
 
 private:
     void onInput();

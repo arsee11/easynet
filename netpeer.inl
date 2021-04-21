@@ -40,19 +40,18 @@ void NetPeerBasic<Socket, EventQueueT,  MsgWrapper>::onInput()
         msg.size(rsize);
 
         if(rsize > 0 ){
-            std::cout<<"read size="<<rsize<<std::endl;
-            if(_recv_cb != nullptr){
-                _recv_cb(this->shared_from_this(), msg);
-            }
-            if(rsize < msg.capicity()) //all availabel datas have recv
-            {
-                break;
-            }
+        	if(_recv_cb != nullptr){
+        	    _recv_cb(this->shared_from_this(), msg);
+        	}
+        	if(rsize < msg.capicity()) //all availabel datas have recv
+        	{
+        	    break;
+        	}
         }
         else{ // no datas to read
             if(errno != EAGAIN && errno != EWOULDBLOCK){
-                std::cout<<"read failed fd="<<this->fd()<<std::endl;
-                this->onClose();
+                //std::cout<<"read failed fd="<<this->fd()<<std::endl;
+                //this->onClose();
             }
             break;
         }

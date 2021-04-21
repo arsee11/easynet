@@ -4,6 +4,7 @@
 #define ACCEPTOR_COMPLETED_H
 
 #include "addr.h"
+#include "acceptor_basic.h"
 #include "netevents.h"
 #include "event_listener.h"
 #include "namespdef.h"
