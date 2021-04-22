@@ -1,5 +1,6 @@
 //udppeer_basic.inl
 
+#include <iostream>
 
 NAMESP_BEGIN
 namespace net
@@ -8,6 +9,7 @@ namespace net
 template<class Socket, class EventQueueT, class MsgWrapper>
 void UdpPeerBasic<Socket, EventQueueT, MsgWrapper>::open()
 {
+    _socket.bind(); 
     _evt.reset( new InputEvent([this](){this->onInput();}) );
 	this->template listen( _socket.fd(), _evt.get());
 }
@@ -22,6 +24,7 @@ void UdpPeerBasic<Socket, EventQueueT,MsgWrapper>::close(){
 template<class Socket, class EventQueueT, class MsgWrapper>
 void UdpPeerBasic<Socket, EventQueueT, MsgWrapper>::onInput()
 {
+    std::cout<<"onInput\n";
     AddrPair addr;
 	MsgWrapper msg(10240);
 	int rlen=-1;

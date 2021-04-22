@@ -4,6 +4,7 @@
 #define ACCEPTOR_COMPLETED_H
 
 #include "addr.h"
+#include "acceptor_basic.h"
 #include "netevents.h"
 #include "event_listener.h"
 #include "namespdef.h"
@@ -28,7 +29,12 @@ template<class Socket, class EventQueueT
 class AcceptorCompleted: public EventListener<EventQueueT>
 		,public AcceptorBasic<Socket, NetInputEvent, AcceptCb_c<NetPeerPtr>>
 { 
+public:
+    using netpeer_ptr = NetPeerPtr;
+
+private:
 	using AcceptorBase=AcceptorBasic<Socket, NetInputEvent, AcceptCb_c<NetPeerPtr>>;
+
 public:
 	AcceptorCompleted(EventQueueT* q, const AddrPair& local_addr)
 		:EventListener<EventQueueT>(q)

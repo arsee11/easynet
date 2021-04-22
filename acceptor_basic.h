@@ -5,6 +5,7 @@
 
 #include "addr.h"
 #include "fddef.h"
+#include "sockopt.h"
 #include "namespdef.h"
 
 #include <memory>
@@ -37,7 +38,10 @@ public:
 
 private:
 	void open(){
-        _socket.listen();
+		_socket.setOption(ReuseAddrOpt());
+		if(_socket.bind()){
+        	_socket.listen();
+		}
 	}
 
 protected:

@@ -1,26 +1,30 @@
-//file:tcpsock.h
-//copyright	: Copyright (c) 2014 arsee.
-//license	: GNU GPL v2.
-//author	: arsee
+//sockopt.h
 
-//****************************
-//modify	
-//data	: 2015-3-17
-//log	: record 
-//****************************
+#include "fddef.h"
+#include "sys/types.h"
+#include "sys/socket.h"
 
+NAMESP_BEGIN
 namespace net
 {
-////////////////////////////////
-//Socket Option operations.
-//@Sock the socket class.
-struct SockOpt
-{
-	bool reuseAddr()
-	{
-		sock.sock();
-	}
 
-	SOCKET _sock;
+struct ReuseAddrOpt
+{
+	bool apply(fd_t fd)
+	{
+		if(fd < 0) 
+			return false;
+
+		if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0) {
+			perror("setsockopt");
+			return false;
+		}
+
+		return true;
+	}
+	
+	int val=1;
 };
-}//
+
+}//net
+NAMESP_END
