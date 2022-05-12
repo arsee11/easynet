@@ -38,8 +38,10 @@ namespace net
 {
 
 #if defined(__GNUC__)
-#define SOCKET_ERROR -1
-#define INVALID_SOCKET -1
+enum{
+    SOCKET_ERROR = -1,
+    INVALID_SOCKET = -1
+};
 #endif
 
 class sockexcpt:public std::exception
