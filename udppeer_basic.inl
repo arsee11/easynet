@@ -24,17 +24,25 @@ void UdpPeerBasic<Socket, EventQueueT,MsgWrapper>::close(){
 template<class Socket, class EventQueueT, class MsgWrapper>
 void UdpPeerBasic<Socket, EventQueueT, MsgWrapper>::onInput()
 {
-    std::cout<<"onInput\n";
-    AddrPair addr;
-	MsgWrapper msg(10240);
-	int rlen=-1;
-	if( ( rlen=_socket.recvfrom(msg.rd_ptr(), msg.capicity(), addr) )>=0 )
-	{
+    while(true){
+        AddrPair addr;
+	    MsgWrapper msg(10240);
+	    int rlen=-1;
+	    rlen=_socket.recvfrom(msg.rd_ptr(), msg.capicity(), addr);
 		msg.size(rlen);
-		if(_onrecv_cb != nullptr){
-			_onrecv_cb(addr, msg);
-		}	
-	}
+        if(rlen > 0 ){
+		    if(_onrecv_cb != nullptr){
+			    _onrecv_cb(addr, msg);
+		    }	
+        }
+        else{ // no datas to read
+            if(errno != EAGAIN && errno != EWOULDBLOCK){
+                //std::cout<<"read failed error ocussed, fd="<<this->fd()<<std::endl;
+				//_onerror_cb(errno);
+            }
+            break;
+        }
+    }
 }
 
 template<class Socket, class EventQueueT, class MsgWrapper>

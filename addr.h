@@ -38,8 +38,10 @@ namespace net
 {
 
 #if defined(__GNUC__)
-#define SOCKET_ERROR -1
-#define INVALID_SOCKET -1
+enum{
+    SOCKET_ERROR = -1,
+    INVALID_SOCKET = -1
+};
 #endif
 
 class sockexcpt:public std::exception
@@ -69,6 +71,9 @@ inline bool operator==(const AddrPair& rhs, const AddrPair& lhs){
 	return (rhs.port==lhs.port && rhs.ip==lhs.ip);
 }
 
+inline bool operator!=(const AddrPair& rhs, const AddrPair& lhs){
+        return !(rhs == lhs);
+}
 
 struct addr_hash_value
 {
@@ -79,7 +84,9 @@ struct addr_hash_value
 	}
 };
 
-
+inline bool is_valid(const AddrPair& addr){
+    return (!addr.ip.empty() && addr.port > 0);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////
