@@ -71,6 +71,9 @@ inline bool operator==(const AddrPair& rhs, const AddrPair& lhs){
 	return (rhs.port==lhs.port && rhs.ip==lhs.ip);
 }
 
+inline bool operator!=(const AddrPair& rhs, const AddrPair& lhs){
+        return !(rhs == lhs);
+}
 
 struct addr_hash_value
 {
@@ -81,7 +84,9 @@ struct addr_hash_value
 	}
 };
 
-
+inline bool is_valid(const AddrPair& addr){
+    return (!addr.ip.empty() && addr.port > 0);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////
