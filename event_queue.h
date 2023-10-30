@@ -44,6 +44,7 @@ private:
 
 private:
 	Poller _poller;
+    std::vector<std::unique_ptr<NetInputEvent>> input_evts;
 };
 
 }//net

@@ -6,17 +6,12 @@
 using namespace std;
 using namespace arsee::net;
 
-void test_getip_getport()
+void test_get_a_host_ip()
 {
-	sockaddr_in addr;
-	addr.sin_port = htons(10000);
-	addr.sin_addr.s_addr = inet_addr("192.168.2.1");
-	
-	cout<<"ip:"<<getip(&addr)<<", port:"<<getport(&addr)<<endl;
+    cout<<"got a ip:"<<IP::get_a_host_ipv4()<<endl;
 }
-	
 
 int main()
 {
-	test_getip_getport();
+	test_get_a_host_ip();
 }

@@ -8,11 +8,6 @@
 NAMESP_BEGIN
 namespace net
 {
-
-#ifdef _MSC_VER
-typedef SOCKET fd_t;
-#endif
-
 #ifdef __GNUC__
 typedef int fd_t;
 #endif

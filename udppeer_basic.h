@@ -32,7 +32,9 @@ public:
 	}
 
 	~UdpPeerBasic(){
-		this->template unlisten(this->fd());
+        if(this->fd() != INVALID_SOCKET){
+            this->close();
+        }
 	}
 
 	void open();

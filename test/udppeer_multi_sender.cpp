@@ -1,5 +1,4 @@
 #include <udppeer.h>
-#include <netlisteners.h>
 
 #include <iostream>
 #include <stdio.h>
@@ -21,18 +20,16 @@ Statistics stat_pre, stat_now;
 struct MySession  
 {
 
-	MySession(NetEventQueue* eq, const AddrPair& peer_addr, int local_port)
-		:_ilistener(eq)
-        ,_peer_addr(peer_addr)
+	MySession(EventQueueEpoll* eq, const AddrPair& peer_addr, int local_port)
+        :_peer_addr(peer_addr)
 	{
 		
-		_udp = new UdpPeer(eq, local_port);
+		_udp = new UdpPeer4(eq, local_port);
 		_udp->open();
-		_ilistener.listen(_udp->fd(), [this](const AddrPair& addr, MsgSt m){this->onInput(addr, m);});
+		_udp->listenOnRecv([this](const AddrPair& addr, MsgSt m){this->onInput(addr, m);});
 	}
 
 	~MySession(){
-		_ilistener.unlisten(_udp->fd());
 		_udp->close();
 	}
 
@@ -49,8 +46,7 @@ struct MySession
 		_udp->sendTo(_peer_addr, msg);
     }
 
-	UdpInputListener _ilistener;
-	UdpPeer *_udp;
+	UdpPeer4 *_udp;
     AddrPair _peer_addr;
 };
 
@@ -64,7 +60,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-	NetEventQueue eq;
+	EventQueueEpoll eq;
     uint8_t buf[172]={
         0x80, 0x00, 0x0f, 0xa0, 0x00, 0x0d, 0xd8, 0x60, 0xca, 0x11, 0x00, 0x1f, 0x88, 0x7f, 0x74, 0x68,
 	    0x5d, 0x61, 0x5b, 0x66, 0x86, 0x9e, 0xad, 0x9f, 0x81, 0x82, 0x87, 0x85, 0x95, 0x99, 0x94, 0x96,
@@ -91,7 +87,7 @@ int main(int argc, char** argv)
     for(int i=0; i<nthreads; i++){
         int port=port_base+i*2;
         int lport=port_base+i*2;
-        AddrPair peer_addr={port, argv[1]};
+        AddrPair peer_addr={argv[1], port};
         session_ptr s( new MySession(&eq, peer_addr, lport));
         sessions.push_back(s);
 
