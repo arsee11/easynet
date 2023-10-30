@@ -30,8 +30,9 @@ template<class Poller>
 template<class Callback>
 void EventQueue<Poller>::bindInput(fd_t fd, Callback cb)
 {
-    auto e = new NetInputEvent(cb);
-	_poller.addPollee(fd, e);
+    std::unique_ptr<NetInputEvent> e(new NetInputEvent(cb));
+	_poller.addPollee(fd, e.get());
+    input_evts.push_back(std::move(e));
 }
 
 template<class Poller>

@@ -18,15 +18,14 @@
 #include <exception>
 #include <string>
 
-#if defined(_MSC_VER)
-#include <winsock2.h>
-#endif
-
 #if defined(__GNUC__)
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <ifaddrs.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 #endif
 
 #include <string.h>
@@ -169,6 +168,54 @@ struct IPv6
         getsockname(fd, (sockaddr*)&addr, &len);
         return makeAddrPair(&addr);
     }
+};
+
+struct IP
+{
+    static bool is_any_ip(const std::string& ip){
+        if(ip == "0.0.0.0"){
+            return true;
+        }
+
+        return false;
+    }
+
+    static std::string  get_a_host_ipv4()
+    {
+        struct ifaddrs* interfaces;
+        int error = getifaddrs(&interfaces);
+        if (error != 0) {
+            return "";
+        }
+
+        for (struct ifaddrs* cursor = interfaces; cursor != nullptr;
+            cursor = cursor->ifa_next) {
+
+            // Some interfaces may not have address assigned.
+            if (!cursor->ifa_addr || !cursor->ifa_netmask) {
+              continue;
+            }
+            // Skip ones which are down.
+            if (!(cursor->ifa_flags & IFF_RUNNING)) {
+              continue;
+            }
+            // Skip not ipv4.
+            if (cursor->ifa_addr->sa_family != AF_INET){ 
+              continue;
+            }
+            
+            auto addr = IPv4::makeAddrPair(reinterpret_cast<IPv4::addr_t*>(cursor->ifa_addr));
+            if(addr.ip.find("127.0.0") != std::string::npos){
+                continue;
+            }
+            freeifaddrs(interfaces);
+            return addr.ip;
+        }
+
+        freeifaddrs(interfaces);
+        return "";
+    }
+
 };
 
 }//net

@@ -1,7 +1,6 @@
 //udppeer_test.cpp
 
-#include "../udppeer.h"
-#include "../netlisteners.h"
+#include "udppeer.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -27,18 +26,16 @@ Statistics stat_pre, stat_now;
 struct MySession  
 {
 
-	MySession(NetEventQueue* eq, int local_port, ExeScope* st)
-		:_ilistener(eq)
-        ,send_thread(st)
+	MySession(EventQueueEpoll* eq, int local_port, ExeScope* st)
+        :send_thread(st)
 	{
 		
-		_udp = new UdpPeer(eq, local_port);
+		_udp = new UdpPeer4(eq, local_port);
 		_udp->open();
-		_ilistener.listen(_udp->fd(), [this](const AddrPair& addr, MsgSt m){this->onInput(addr, m);});
+		_udp->listenOnRecv([this](const AddrPair& addr, MsgSt m){this->onInput(addr, m);});
 	}
 
 	~MySession(){
-		_ilistener.unlisten(_udp->fd());
 		_udp->close();
 	}
 
@@ -54,8 +51,7 @@ struct MySession
         );
 	}
 
-	UdpInputListener _ilistener;
-	UdpPeer *_udp;
+	UdpPeer4 *_udp;
     ExeScope* send_thread;
 };
 
@@ -70,10 +66,10 @@ int main(int argc, char** argv)
 
 
     int num_of_eq=1;
-    std::vector<NetEventQueue*> eqs;
+    std::vector<EventQueueEpoll*> eqs;
     std::vector<std::thread> threads;
     for(int i=0; i<num_of_eq; i++){
-        NetEventQueue* eq = new NetEventQueue;
+        EventQueueEpoll* eq = new EventQueueEpoll;
         eqs.push_back(eq);
         threads.push_back(std::thread([eq](){
 	            while(true)
@@ -94,7 +90,7 @@ int main(int argc, char** argv)
     int num=atoi(argv[1]);
     for(int i=0; i<num; i++){
         int nport=20000+i*2;
-        NetEventQueue* eq = eqs[ i%num_of_eq ];
+        EventQueueEpoll* eq = eqs[ i%num_of_eq ];
         session_ptr s( new MySession(eq, nport, send_threads[0]));
         sessions.push_back(s);
         session_ptr s2( new MySession(eq, nport+1, nullptr));
