@@ -23,6 +23,7 @@ template<class Socket, class EventQueueT
 >
 class Connector
 {
+public:
     using netpeer_ptr = NetPeerPtr;
 
 public:
